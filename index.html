@@ -10,32 +10,37 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <!-- Accessible Skip Navigation -->
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <!-- Top Announcement / Live Indicator Bar -->
+  <!-- Top Announcement / Navigation Header -->
   <header class="app-header" role="banner">
     <div class="header-container">
       <div class="brand-group">
-        <div class="logo-mark" aria-hidden="true">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-          </svg>
-        </div>
-        <div>
-          <div class="brand-title-wrap">
-            <h1 class="brand-title">PlanFlow AI</h1>
-            <span class="badge badge-ai" aria-label="GenAI Powered Assistant">GenAI Engine v2.4</span>
+        <a href="#hero-banner" class="brand-link" aria-label="PlanFlow AI Homepage">
+          <div class="logo-mark" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
           </div>
-          <p class="brand-tagline">Intelligent Multi-Event Planning &amp; Negotiation Assistant</p>
-        </div>
+          <span class="brand-title">PlanFlow AI</span>
+        </a>
       </div>
 
-      <!-- Quick Global Controls -->
-      <nav class="header-actions" aria-label="Global Controls">
+      <!-- Center Navigation Links -->
+      <nav class="nav-center-links" aria-label="Main Navigation">
+        <a href="#event-selector-heading" class="nav-link">Event Types</a>
+        <a href="#budget-engine-heading" class="nav-link">Budget Calculator</a>
+        <a href="#roadmap-heading" class="nav-link">Roadmap</a>
+        <a href="#vendor-heading" class="nav-link">Vendors</a>
+        <a href="#plangenie-heading" class="nav-link">PlanGenie AI</a>
+      </nav>
+
+      <!-- Quick Global Controls & Top CTA -->
+      <div class="header-actions" aria-label="Global Controls">
         <!-- Currency Selector -->
         <div class="control-group">
           <label for="currency-select" class="visually-hidden">Select Currency</label>
@@ -57,7 +62,7 @@
 
         <!-- Export Dropdown / Actions -->
         <div class="dropdown">
-          <button id="btn-export-menu" class="btn btn-secondary btn-sm" aria-haspopup="true" aria-expanded="false" id="exportMenuBtn">
+          <button id="btn-export-menu" class="btn btn-secondary btn-sm" aria-haspopup="true" aria-expanded="false">
             <span aria-hidden="true">📥</span> Export <span class="arrow-down" aria-hidden="true">▾</span>
           </button>
           <div class="dropdown-content" id="exportDropdown" role="menu">
@@ -77,9 +82,68 @@
         <button id="btn-open-settings" class="btn btn-icon" aria-label="AI Settings and API Key" title="Gemini AI Settings">
           <span aria-hidden="true">⚙️</span>
         </button>
-      </nav>
+
+        <!-- Header Pill CTA -->
+        <a href="#event-selector-heading" class="btn btn-header-cta" aria-label="Jump to planning onboarding">
+          Plan My Event →
+        </a>
+      </div>
     </div>
   </header>
+
+  <!-- Hero Section (Inspired by Yatra AI & Modern GenAI Web Apps) -->
+  <section id="hero-banner" class="hero-showcase" aria-labelledby="hero-headline">
+    <div class="hero-glow-orb hero-glow-orb-primary" aria-hidden="true"></div>
+    <div class="hero-glow-orb hero-glow-orb-secondary" aria-hidden="true"></div>
+    <div class="hero-inner-container">
+      
+      <!-- Pill Badge -->
+      <div class="hero-badge" role="status">
+        <span class="badge-dot-orange" aria-hidden="true">●</span>
+        <span>Powered by GenAI &amp; Gemini</span>
+      </div>
+
+      <!-- Main Punchy Typography -->
+      <h1 id="hero-headline" class="hero-headline">
+        Plan smarter.<br>
+        <span class="hero-gradient-text">Celebrate better.</span>
+      </h1>
+
+      <!-- Subtitle Description -->
+      <p class="hero-description">
+        PlanFlow AI is your intelligent event companion. Tell us your event archetype, budget, and guest count — PlanGenie crafts a personalized budget breakdown, backward milestone roadmap, and negotiation strategy in seconds.
+      </p>
+
+      <!-- Dual Action Buttons -->
+      <div class="hero-cta-group">
+        <a href="#event-selector-heading" class="btn btn-hero-primary">
+          <span aria-hidden="true">✨</span> Start Planning Free
+        </a>
+        <a href="#budget-engine-heading" class="btn btn-hero-secondary">
+          See Features <span aria-hidden="true">↓</span>
+        </a>
+      </div>
+
+      <!-- Floating Feature Highlights -->
+      <div class="hero-stats-bar">
+        <div class="hero-stat-item">
+          <span class="stat-number">3</span>
+          <span class="stat-label">Event Archetypes</span>
+        </div>
+        <div class="hero-stat-divider" aria-hidden="true">•</div>
+        <div class="hero-stat-item">
+          <span class="stat-number">100%</span>
+          <span class="stat-label">Offline GenAI Fallback</span>
+        </div>
+        <div class="hero-stat-divider" aria-hidden="true">•</div>
+        <div class="hero-stat-item">
+          <span class="stat-number">0s</span>
+          <span class="stat-label">Instant Setup</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
 
   <!-- Main App Container -->
   <main id="main-content" class="main-layout" role="main">
