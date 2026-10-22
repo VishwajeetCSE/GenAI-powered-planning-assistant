@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PlanFlow AI — Production-Grade GenAI-Powered Planning Assistant for Weddings, Milestone Birthdays, and Community Events.">
+  <meta name="theme-color" content="#4f46e5">
+  <title>PlanFlow AI — GenAI-Powered Event Planning Assistant</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Accessible Skip Navigation -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top Announcement / Live Indicator Bar -->
+  <header class="app-header" role="banner">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="logo-mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title-wrap">
+            <h1 class="brand-title">PlanFlow AI</h1>
+            <span class="badge badge-ai" aria-label="GenAI Powered Assistant">GenAI Engine v2.4</span>
+          </div>
+          <p class="brand-tagline">Intelligent Multi-Event Planning &amp; Negotiation Assistant</p>
+        </div>
+      </div>
+
+      <!-- Quick Global Controls -->
+      <nav class="header-actions" aria-label="Global Controls">
+        <!-- Currency Selector -->
+        <div class="control-group">
+          <label for="currency-select" class="visually-hidden">Select Currency</label>
+          <select id="currency-select" class="select-pill" aria-label="Currency Selector">
+            <option value="USD" selected>USD ($)</option>
+            <option value="INR">INR (₹)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+          </select>
+        </div>
+
+        <!-- Sample Demo & Reset Buttons -->
+        <button id="btn-load-demo" class="btn btn-secondary btn-sm" title="Load realistic sample data for instant evaluation">
+          <span aria-hidden="true">✨</span> Demo Data
+        </button>
+        <button id="btn-reset" class="btn btn-ghost btn-sm" title="Reset all fields to default state">
+          <span aria-hidden="true">🔄</span> Reset
+        </button>
+
+        <!-- Export Dropdown / Actions -->
+        <div class="dropdown">
+          <button id="btn-export-menu" class="btn btn-secondary btn-sm" aria-haspopup="true" aria-expanded="false" id="exportMenuBtn">
+            <span aria-hidden="true">📥</span> Export <span class="arrow-down" aria-hidden="true">▾</span>
+          </button>
+          <div class="dropdown-content" id="exportDropdown" role="menu">
+            <button class="dropdown-item" id="btn-export-json" role="menuitem">Export JSON Backup</button>
+            <button class="dropdown-item" id="btn-import-json-trigger" role="menuitem">Import JSON Data</button>
+            <button class="dropdown-item" id="btn-print-summary" role="menuitem">Print / PDF Summary</button>
+          </div>
+          <input type="file" id="import-json-file" accept=".json" style="display: none;" aria-hidden="true">
+        </div>
+
+        <!-- Theme Toggle -->
+        <button id="btn-theme-toggle" class="btn btn-icon" aria-label="Toggle light or dark theme" title="Toggle theme">
+          <span id="theme-icon" aria-hidden="true">🌙</span>
+        </button>
+
+        <!-- API Settings Modal Button -->
+        <button id="btn-open-settings" class="btn btn-icon" aria-label="AI Settings and API Key" title="Gemini AI Settings">
+          <span aria-hidden="true">⚙️</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main App Container -->
+  <main id="main-content" class="main-layout" role="main">
+
+    <!-- Active Event Bar & Switcher -->
+    <section class="section-card hero-section" aria-labelledby="event-selector-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="event-selector-heading" class="section-title">Step 1: Event Type &amp; Core Constraints</h2>
+          <p class="section-desc">Select your event archetype to trigger context-aware budget algorithms and milestone roadmaps.</p>
+        </div>
+        <div class="status-indicator">
+          <span class="status-dot pulse" aria-hidden="true"></span>
+          <span id="active-event-badge" class="badge badge-primary">💍 Wedding Mode</span>
+        </div>
+      </div>
+
+      <!-- Event Archetype Selector -->
+      <div class="event-archetype-grid" role="radiogroup" aria-label="Event Archetype Selection">
+        <label class="archetype-card active" for="event-wedding">
+          <input type="radio" id="event-wedding" name="eventType" value="wedding" checked class="visually-hidden">
+          <div class="archetype-icon" aria-hidden="true">💍</div>
+          <div class="archetype-content">
+            <span class="archetype-title">Wedding Celebration</span>
+            <span class="archetype-subtitle">Ceremony, Banquet, Photography &amp; Guest Experience</span>
+          </div>
+        </label>
+
+        <label class="archetype-card" for="event-birthday">
+          <input type="radio" id="event-birthday" name="eventType" value="birthday" class="visually-hidden">
+          <div class="archetype-icon" aria-hidden="true">🎂</div>
+          <div class="archetype-content">
+            <span class="archetype-title">Milestone Birthday</span>
+            <span class="archetype-subtitle">Themed Party, DJ &amp; Entertainment, Memorable Keepsakes</span>
+          </div>
+        </label>
+
+        <label class="archetype-card" for="event-community">
+          <input type="radio" id="event-community" name="eventType" value="community" class="visually-hidden">
+          <div class="archetype-icon" aria-hidden="true">🤝</div>
+          <div class="archetype-content">
+            <span class="archetype-title">Community Gathering</span>
+            <span class="archetype-subtitle">Permits, AV Gear, Crowd Safety &amp; Open Space Logistics</span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Core Planning Parameters Form -->
+      <form id="onboarding-form" class="params-grid" novalidate>
+        <div class="form-group">
+          <label for="input-budget">
+            Total Budget (<span class="currency-label">$</span>) <span class="required" aria-hidden="true">*</span>
+          </label>
+          <div class="input-currency-wrapper">
+            <span class="currency-symbol" aria-hidden="true">$</span>
+            <input type="number" id="input-budget" min="100" max="10000000" step="100" value="25000" required
+                   aria-describedby="budget-helper" placeholder="25000">
+          </div>
+          <span id="budget-helper" class="helper-text">Base budget for automated allocation</span>
+        </div>
+
+        <div class="form-group">
+          <label for="input-guests">
+            Target Guest Count <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input type="number" id="input-guests" min="5" max="25000" step="5" value="120" required
+                 aria-describedby="guests-helper" placeholder="120">
+          <span id="guests-helper" class="helper-text">Used for per-head budget projections</span>
+        </div>
+
+        <div class="form-group">
+          <label for="input-timeline">Planning Horizon</label>
+          <select id="input-timeline">
+            <option value="1">1 Month (Urgent Blitz)</option>
+            <option value="3">3 Months (Accelerated)</option>
+            <option value="6" selected>6 Months (Standard Ideal)</option>
+            <option value="9">9 Months (Relaxed Pace)</option>
+            <option value="12">12 Months (Comprehensive Grand)</option>
+          </select>
+          <span class="helper-text">Calculates backward milestone schedule</span>
+        </div>
+
+        <div class="form-group">
+          <label for="input-location">Location Style</label>
+          <select id="input-location">
+            <option value="indoor" selected>Indoor Banquet / Ballroom</option>
+            <option value="outdoor">Outdoor Garden / Park Pavilion</option>
+            <option value="destination">Scenic Destination / Resort</option>
+            <option value="virtual">Hybrid / Virtual Broadcast</option>
+          </select>
+          <span class="helper-text">Impacts venue &amp; contingency ratios</span>
+        </div>
+
+        <div class="form-group">
+          <label for="input-vibe">Event Vibe / Theme</label>
+          <select id="input-vibe">
+            <option value="modern" selected>Modern Luxury &amp; Minimalist</option>
+            <option value="rustic">Rustic Charm &amp; Bohemian</option>
+            <option value="eco">Eco-Friendly &amp; Sustainable</option>
+            <option value="cultural">Vibrant Cultural &amp; Traditional</option>
+            <option value="casual">Casual Backyard &amp; Festivity</option>
+          </select>
+          <span class="helper-text">Customizes PlanGenie suggestions</span>
+        </div>
+      </form>
+    </section>
+
+    <!-- Dynamic Budget Allocation Engine -->
+    <section class="section-card budget-section" aria-labelledby="budget-engine-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="budget-engine-heading" class="section-title">Step 2: Context-Aware Dynamic Budget Calculator</h2>
+          <p class="section-desc">Live category distribution with real-time sliders, per-guest telemetry, and over-budget warnings.</p>
+        </div>
+        <div class="budget-actions">
+          <button id="btn-rebalance-budget" class="btn btn-secondary btn-sm" title="Reset percentages to archetype defaults">
+            ⚖️ Rebalance Defaults
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick KPI Metric Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">Total Allocated</span>
+          <span id="kpi-total-allocated" class="kpi-value">$25,000</span>
+          <span id="kpi-percentage-sum" class="kpi-subtext text-success">100% of Total Budget</span>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-label">Est. Cost Per Guest</span>
+          <span id="kpi-per-guest" class="kpi-value">$208.33</span>
+          <span class="kpi-subtext">Based on 120 Attendees</span>
+        </div>
+
+        <div class="kpi-card" id="kpi-card-status">
+          <span class="kpi-label">Budget Variance</span>
+          <span id="kpi-variance-amount" class="kpi-value text-success">$0 (Balanced)</span>
+          <span id="kpi-variance-status" class="kpi-subtext text-success">100% Allocated</span>
+        </div>
+      </div>
+
+      <!-- Live Over-Budget / Under-Budget Warning Banner -->
+      <div id="budget-warning-banner" class="alert-banner alert-warning hidden" role="alert" aria-live="polite">
+        <span class="alert-icon" aria-hidden="true">⚠️</span>
+        <span id="budget-warning-text">Allocation mismatch: Current sum is 105%. Please adjust categories to 100%.</span>
+      </div>
+
+      <!-- Multi-Color Distribution Bar -->
+      <div class="distribution-bar-wrapper" aria-label="Visual Budget Distribution">
+        <div class="distribution-bar" id="distribution-bar-container">
+          <!-- Dynamically populated percentage chunks -->
+        </div>
+      </div>
+
+      <!-- Category Sliders Grid -->
+      <div class="category-sliders-grid" id="category-sliders-container">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </section>
+
+    <!-- Planning Roadmap & Readiness Engine -->
+    <section class="section-card timeline-section" aria-labelledby="roadmap-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="roadmap-heading" class="section-title">Step 3: Intelligent Timeline &amp; Milestone Roadmap</h2>
+          <p class="section-desc">Backwards-scheduled milestone phases synchronized with your timeline horizon.</p>
+        </div>
+        <!-- Planning Readiness Score Widget -->
+        <div class="readiness-widget" aria-label="Planning Readiness Score">
+          <div class="readiness-text-wrap">
+            <span class="readiness-label">Planning Readiness</span>
+            <span id="readiness-score-text" class="readiness-score">0%</span>
+          </div>
+          <div class="readiness-progress-track" role="progressbar" id="readiness-progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            <div id="readiness-progress-fill" class="readiness-progress-fill" style="width: 0%;"></div>
+          </div>
+          <span id="readiness-badge" class="badge badge-neutral">Stage: Initiation</span>
+        </div>
+      </div>
+
+      <!-- Custom Milestone Quick-Add Bar -->
+      <form id="add-task-form" class="quick-add-form" aria-label="Add custom task">
+        <label for="new-task-title" class="visually-hidden">New Task Description</label>
+        <input type="text" id="new-task-title" placeholder="Add custom planning task or deliverable..." required>
+        <label for="new-task-phase" class="visually-hidden">Task Phase</label>
+        <select id="new-task-phase" aria-label="Select milestone phase">
+          <option value="phase-long">6+ Months Out</option>
+          <option value="phase-mid">3 Months Out</option>
+          <option value="phase-near">1 Month Out</option>
+          <option value="phase-week">Week Of Event</option>
+          <option value="phase-day">Day-Of Run-Of-Show</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">➕ Add Task</button>
+      </form>
+
+      <!-- Milestones Accordion / Container -->
+      <div class="milestones-container" id="milestones-container" aria-live="polite">
+        <!-- Generated dynamically via JS -->
+      </div>
+    </section>
+
+    <!-- Dynamic Vendor Checklist & Negotiation Assistant -->
+    <section class="section-card vendor-section" aria-labelledby="vendor-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="vendor-heading" class="section-title">Step 4: Vendor Checklist &amp; AI Negotiation Assistant</h2>
+          <p class="section-desc">Manage contracted quotes against target category budgets and craft polite, persuasive AI negotiation scripts.</p>
+        </div>
+        <div class="vendor-top-controls">
+          <button id="btn-add-vendor-toggle" class="btn btn-primary btn-sm">
+            ➕ Add Vendor
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="category-filter-bar" role="tablist" aria-label="Filter vendors by category">
+        <button class="filter-chip active" data-filter="all" role="tab" aria-selected="true">All Vendors</button>
+        <button class="filter-chip" data-filter="Venue" role="tab" aria-selected="false">Venue</button>
+        <button class="filter-chip" data-filter="Catering" role="tab" aria-selected="false">Catering</button>
+        <button class="filter-chip" data-filter="Decor & Entertainment" role="tab" aria-selected="false">Decor &amp; Entertainment</button>
+        <button class="filter-chip" data-filter="Photography & Media" role="tab" aria-selected="false">Photography</button>
+        <button class="filter-chip" data-filter="Contingency & Permits" role="tab" aria-selected="false">Permits &amp; Logistics</button>
+      </div>
+
+      <!-- Add Vendor Form (Collapsible) -->
+      <form id="add-vendor-form" class="add-vendor-panel hidden" aria-label="Add New Vendor Form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="vendor-name-input">Vendor / Company Name</label>
+            <input type="text" id="vendor-name-input" placeholder="e.g. Grand Vista Ballroom" required>
+          </div>
+          <div class="form-group">
+            <label for="vendor-category-select">Category</label>
+            <select id="vendor-category-select">
+              <option value="Venue">Venue</option>
+              <option value="Catering">Catering</option>
+              <option value="Decor & Entertainment">Decor &amp; Entertainment</option>
+              <option value="Photography & Media">Photography &amp; Media</option>
+              <option value="Contingency & Permits">Contingency &amp; Permits</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="vendor-quoted-input">Quoted Price (<span class="currency-label">$</span>)</label>
+            <input type="number" id="vendor-quoted-input" min="0" step="50" placeholder="10000" required>
+          </div>
+          <div class="form-group">
+            <label for="vendor-status-select">Status</label>
+            <select id="vendor-status-select">
+              <option value="Prospecting">Prospecting</option>
+              <option value="Contacted">Contacted</option>
+              <option value="Negotiating">Negotiating</option>
+              <option value="Booked">Booked</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-sm">Save Vendor</button>
+          <button type="button" id="btn-cancel-vendor" class="btn btn-ghost btn-sm">Cancel</button>
+        </div>
+      </form>
+
+      <!-- Vendor Cards Grid -->
+      <div class="vendor-cards-grid" id="vendor-cards-container">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- PlanGenie: Personalized AI Event Coach -->
+    <section class="section-card plangenie-section" aria-labelledby="plangenie-heading">
+      <div class="section-header">
+        <div class="plangenie-header-title">
+          <div class="avatar-icon-ai" aria-hidden="true">🧞</div>
+          <div>
+            <h2 id="plangenie-heading" class="section-title">PlanGenie — Contextual AI Event Coach</h2>
+            <p class="section-desc">Interactive GenAI brainstormer with real-time budget memory, contingency solvers &amp; run-of-show generation.</p>
+          </div>
+        </div>
+        <div class="ai-status-pill" id="ai-mode-pill">
+          <span class="status-dot green" aria-hidden="true"></span>
+          <span id="ai-mode-label">Local GenAI Engine (Offline Ready)</span>
+        </div>
+      </div>
+
+      <!-- Context Snapshot Banner -->
+      <div class="context-snapshot-bar" aria-label="Current AI Context Memory">
+        <span class="context-tag">🧠 <strong>Memory Active:</strong></span>
+        <span class="context-item" id="context-item-type">Event: Wedding</span>
+        <span class="context-divider" aria-hidden="true">•</span>
+        <span class="context-item" id="context-item-budget">Budget: $25,000</span>
+        <span class="context-divider" aria-hidden="true">•</span>
+        <span class="context-item" id="context-item-guests">Guests: 120</span>
+        <span class="context-divider" aria-hidden="true">•</span>
+        <span class="context-item" id="context-item-vibe">Vibe: Modern Luxury</span>
+      </div>
+
+      <!-- Preset Quick Prompt Chips -->
+      <div class="quick-prompts-bar" aria-label="Suggested Prompts">
+        <span class="prompts-label">Prompt Ideas:</span>
+        <button class="prompt-chip" data-prompt="Suggest 5 unique budget-friendly themes for this event">
+          💡 5 Budget Themes
+        </button>
+        <button class="prompt-chip" data-prompt="How to handle sudden rain for an outdoor community festival?">
+          🌧️ Rain Contingency Plan
+        </button>
+        <button class="prompt-chip" data-prompt="Create a minute-by-minute run-of-show schedule for day of event">
+          ⏱️ Run-of-Show Schedule
+        </button>
+        <button class="prompt-chip" data-prompt="Suggest interactive games and seating arrangements for 120 guests">
+          🎯 Games &amp; Seating Ideas
+        </button>
+        <button class="prompt-chip" data-prompt="How can I cut 15% off catering without guests noticing a quality drop?">
+          🍽️ Catering Cost Optimization
+        </button>
+      </div>
+
+      <!-- Chat Conversation Box -->
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages-container" role="log" aria-live="polite">
+          <!-- Dynamically populated chat bubbles -->
+        </div>
+
+        <!-- Chat Input Form -->
+        <form id="chat-form" class="chat-input-form">
+          <label for="chat-input-field" class="visually-hidden">Ask PlanGenie anything</label>
+          <input type="text" id="chat-input-field" placeholder="Ask PlanGenie anything about timelines, vendors, menus, or themes..." autocomplete="off" required>
+          <button type="submit" class="btn btn-primary" id="btn-chat-send" aria-label="Send message">
+            <span>Send</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+          <button type="button" id="btn-clear-chat" class="btn btn-ghost btn-sm" title="Clear conversation history">
+            Clear Chat
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modals & Accessible Dialogs -->
+
+  <!-- 1. AI Negotiation Script Dialog -->
+  <dialog id="negotiation-dialog" class="accessible-dialog" aria-labelledby="dialog-negotiation-title">
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <div class="dialog-title-wrap">
+          <span class="dialog-icon" aria-hidden="true">📜</span>
+          <h3 id="dialog-negotiation-title" class="dialog-title">AI Vendor Negotiation Script</h3>
+        </div>
+        <button class="dialog-close-btn" id="btn-close-negotiation-dialog" aria-label="Close dialog">✕</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="negotiation-meta-info" id="negotiation-meta-info">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="script-box-wrapper">
+          <div class="script-box-header">
+            <span>Professional Inquiry &amp; Counter-Offer Draft</span>
+            <button class="btn btn-sm btn-secondary" id="btn-copy-script">
+              <span id="copy-btn-text">📋 Copy to Clipboard</span>
+            </button>
+          </div>
+          <pre class="script-pre" id="negotiation-script-content" tabindex="0"></pre>
+        </div>
+
+        <div class="script-tactics-box">
+          <h4>💡 Negotiation Strategy Tips:</h4>
+          <ul id="negotiation-tips-list">
+            <li>Highlight guaranteed upfront deposit or off-peak date flexibility.</li>
+            <li>Inquire about bundled services or omitting optional add-ons to meet target budget.</li>
+            <li>Always thank the vendor for their creative portfolio before discussing price ceilings.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <a id="btn-email-mailto" href="#" class="btn btn-primary btn-sm" target="_blank" rel="noopener">
+          ✉️ Open in Email Client
+        </a>
+        <button class="btn btn-secondary btn-sm" id="btn-dismiss-negotiation">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 2. AI Settings Dialog (Gemini API Key) -->
+  <dialog id="settings-dialog" class="accessible-dialog" aria-labelledby="dialog-settings-title">
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <div class="dialog-title-wrap">
+          <span class="dialog-icon" aria-hidden="true">⚙️</span>
+          <h3 id="dialog-settings-title" class="dialog-title">PlanGenie AI Configuration</h3>
+        </div>
+        <button class="dialog-close-btn" id="btn-close-settings-dialog" aria-label="Close settings dialog">✕</button>
+      </div>
+
+      <div class="dialog-body">
+        <p class="dialog-desc">
+          PlanFlow AI includes a robust <strong>built-in contextual rule &amp; heuristic engine</strong> that operates 100% offline out-of-the-box. Optionally, you may supply your Google Gemini API key to activate live generative responses.
+        </p>
+
+        <form id="settings-form" class="settings-form">
+          <div class="form-group">
+            <label for="gemini-api-key-input">Google Gemini API Key (Optional)</label>
+            <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." autocomplete="off">
+            <span class="helper-text">Key is saved strictly in your browser's private LocalStorage. Never sent to third-party servers.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="gemini-model-select">Gemini Model</label>
+            <select id="gemini-model-select">
+              <option value="gemini-1.5-flash" selected>Gemini 1.5 Flash (Fast &amp; Cost-Effective)</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Reasoning)</option>
+              <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
+            </select>
+          </div>
+
+          <div class="engine-status-box">
+            <div class="engine-status-line">
+              <span>Status:</span>
+              <strong id="settings-engine-status">Using Local Contextual Heuristic AI</strong>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm text-danger" id="btn-clear-api-key">Remove API Key</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="dialog-footer">
+        <button class="btn btn-primary btn-sm" id="btn-save-settings">Save &amp; Apply</button>
+        <button class="btn btn-secondary btn-sm" id="btn-dismiss-settings">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 3. Formatted Print / PDF Summary View (Hidden by default, used for printing) -->
+  <div id="printable-summary" class="printable-summary-container" aria-hidden="true">
+    <!-- Populated by JS right before window.print() -->
+  </div>
+
+  <!-- Accessible Toast Notification for feedback -->
+  <div id="toast-notification" class="toast-notification" role="status" aria-live="polite"></div>
+
+  <!-- Application Footer -->
+  <footer class="app-footer" role="contentinfo">
+    <div class="footer-container">
+      <div class="footer-left">
+        <strong>PlanFlow AI</strong> — Production-Grade Event Planning Assistant
+        <div class="footer-badges">
+          <span class="badge badge-success">✓ WCAG 2.1 AA Compliant</span>
+          <span class="badge badge-primary">✓ Zero Bulky Dependencies</span>
+          <span class="badge badge-neutral">✓ 100% Offline-First</span>
+        </div>
+      </div>
+      <div class="footer-right">
+        <span>Target Repository: <code>VishwajeetCSE/GenAI-powered-planning-assistant</code></span>
+        <span>Built for Hack2Skill GenAI Challenge</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
