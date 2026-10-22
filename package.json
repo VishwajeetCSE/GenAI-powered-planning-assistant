@@ -1,0 +1,23 @@
+{
+  "name": "planflow-ai",
+  "version": "2.4.0",
+  "description": "PlanFlow AI — Production-Grade GenAI-Powered Multi-Event Planning Assistant",
+  "private": true,
+  "main": "app.js",
+  "scripts": {
+    "test": "node test.js",
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "genai",
+    "planning-assistant",
+    "wedding-planner",
+    "birthday-planner",
+    "community-events",
+    "budget-calculator",
+    "hack2skill",
+    "vercel"
+  ],
+  "author": "VishwajeetCSE",
+  "license": "MIT"
+}

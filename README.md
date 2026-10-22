@@ -4,6 +4,7 @@
 
 ![PlanFlow AI Logo Banner](https://img.shields.io/badge/PlanFlow%20AI-v2.4%20Production-6366f1?style=for-the-badge&logo=sparkles&logoColor=white)
 ![Build Status](https://img.shields.io/badge/Build-Passing%20(100%25)-10b981?style=for-the-badge&logo=githubactions&logoColor=white)
+![Vercel Ready](https://img.shields.io/badge/Vercel-Deployment%20Ready-black?style=for-the-badge&logo=vercel&logoColor=white)
 ![Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Pure%20Vanilla%20JS)-06b6d4?style=for-the-badge)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA%20Compliant-success?style=for-the-badge&logo=w3c&logoColor=white)
 ![Size](https://img.shields.io/badge/Repo%20Size-%3C%202%20MB-8b5cf6?style=for-the-badge)
@@ -11,7 +12,9 @@
 
 **PlanFlow AI** is a lightweight, context-aware GenAI event-planning assistant engineered for **Weddings**, **Milestone Birthdays**, and **Community Gatherings**. It unifies dynamic budget modeling, backwards-scheduled milestone roadmaps, vendor negotiation scripts, and an interactive AI event coach into a cohesive, zero-dependency web application.
 
-[Live Features](#-live-features-walkthrough) • [Architecture](#-core-solution-architecture) • [AI & Heuristic Engine](#-ai-logic--prompt-engineering) • [Testing & QA](#-automated-testing-assets) • [Quick Start](#-quick-start-guide)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FVishwajeetCSE%2FGenAI-powered-planning-assistant)
+
+[Live Features](#-live-features-walkthrough) • [Architecture](#-core-solution-architecture) • [AI & Heuristic Engine](#-ai-logic--prompt-engineering) • [Deploy to Vercel](#-deploy-to-vercel) • [Testing & QA](#-automated-testing-assets) • [Quick Start](#-quick-start-guide)
 
 </div>
 
@@ -104,6 +107,27 @@ flowchart TD
 
 ---
 
+## ⚡ Deploy to Vercel (Ready in 30 Seconds)
+
+PlanFlow AI is fully optimized for **Vercel** with a custom `vercel.json` and zero build configuration needed.
+
+### Method 1: 1-Click Deploy Button
+Click the button below to fork and deploy directly:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FVishwajeetCSE%2FGenAI-powered-planning-assistant)
+
+### Method 2: Import from GitHub Dashboard
+1. Go to your [Vercel Dashboard](https://vercel.com/dashboard) and click **"Add New..." > "Project"**.
+2. Select your GitHub repository: `VishwajeetCSE/GenAI-powered-planning-assistant`.
+3. In Project Settings:
+   - **Framework Preset**: `Other` (or leave default autodetect)
+   - **Root Directory**: `./`
+   - **Build Command**: *(leave empty)*
+   - **Output Directory**: *(leave empty)*
+4. Click **Deploy**. Your app will be live with a production HTTPS URL within seconds!
+
+---
+
 ## 🧠 AI Logic & Prompt Engineering
 
 PlanFlow AI utilizes a hybrid two-tier AI architecture:
@@ -187,10 +211,6 @@ Total Assertions: 28 | Passed: 28 | Failed: 0 | Execution Time: < 70ms
 
 ## 🚀 Quick Start Guide
 
-### Prerequisites
-- Any modern web browser (Chrome, Firefox, Safari, Edge).
-- Optional: [Node.js](https://nodejs.org/) (v16+) to execute the test suite.
-
 ### Running Locally
 Because PlanFlow AI has **zero build dependencies**, you can run it immediately without `npm install`:
 
@@ -223,6 +243,9 @@ Because PlanFlow AI has **zero build dependencies**, you can run it immediately 
 ├── index.html       # Accessible semantic HTML5 application structure
 ├── styles.css       # Modern responsive design tokens, glassmorphism & print stylesheet
 ├── app.js           # Pure modular Vanilla JS core logic, calculations & AI engines
+├── favicon.svg      # Branded vector favicon for browser and Vercel hosting
+├── vercel.json      # Production Vercel deployment configuration & security headers
+├── package.json     # Project metadata and test scripts
 ├── test.js          # Self-contained Node.js automated test runner (100% pass)
 ├── TESTING.md       # Edge-case matrix, browser matrix & manual QA protocol
 ├── SECURITY.md      # Threat model, XSS defense strategy & privacy rules
@@ -236,6 +259,7 @@ Because PlanFlow AI has **zero build dependencies**, you can run it immediately 
 | Requirement | Implementation Details | Status |
 | :--- | :--- | :---: |
 | **Lightweight (< 10 MB)** | Pure Vanilla JS/HTML/CSS. Total repository size is **< 2 MB**. | ✅ Compliant |
+| **Vercel Deployment** | Pre-configured `vercel.json` with security headers & 1-click button. | ✅ Compliant |
 | **Single Branch (`main`)** | All commits and codebase strictly hosted on `main`. | ✅ Compliant |
 | **Multi-Event Switcher** | Wedding, Milestone Birthday, and Community Gathering archetypes. | ✅ Compliant |
 | **Dynamic Budget Calculator** | Multi-currency, sliders, variance warnings, and per-guest metrics. | ✅ Compliant |
