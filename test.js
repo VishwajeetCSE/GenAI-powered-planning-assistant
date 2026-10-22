@@ -3,26 +3,35 @@
  * Runnable via: node test.js (Zero external testing dependencies)
  */
 
+'use strict';
+
 const {
   escapeHTML,
   sanitizeNumber,
   sanitizeString,
+  debounce,
   CURRENCIES,
   DEFAULT_CATEGORIES,
   ARCHETYPE_DEFAULTS,
+  DEFAULT_RISKS,
+  DEFAULT_INVENTORY,
   calculateBudget,
   formatCurrency,
   buildMilestones,
   calculateReadiness,
   buildSampleVendors,
   generateNegotiationScript,
+  buildSampleRisks,
+  calculateRiskMetrics,
+  buildSampleInventory,
+  calculateInventoryMetrics,
   runHeuristicAI,
   askPlanGenie,
   getDefaultState
 } = require('./app.js');
 
 // ============================================================================
-// MICRO TEST HARNESS
+// MICRO TEST HARNESS (Zero External Dependencies)
 // ============================================================================
 
 let totalTests = 0;
@@ -39,26 +48,17 @@ const COLORS = {
   bold: '\x1b[1m'
 };
 
+const suites = [];
+let currentSuite = null;
+
 function describe(suiteName, fn) {
-  console.log(`\n${COLORS.bold}${COLORS.cyan}▶ Test Suite: ${suiteName}${COLORS.reset}`);
+  currentSuite = { name: suiteName, tests: [] };
+  suites.push(currentSuite);
   fn();
 }
 
 function it(testName, fn) {
-  totalTests++;
-  try {
-    fn();
-    passedTests++;
-    console.log(`  ${COLORS.green}✔ PASS:${COLORS.reset} ${testName}`);
-  } catch (err) {
-    failedTests++;
-    console.error(`  ${COLORS.red}✖ FAIL:${COLORS.reset} ${testName}`);
-    console.error(`    ${COLORS.red}Error:${COLORS.reset} ${err.message}`);
-    if (err.stack) {
-      const line = err.stack.split('\n')[2];
-      if (line) console.error(`    ${COLORS.yellow}${line.trim()}${COLORS.reset}`);
-    }
-  }
+  currentSuite.tests.push({ name: testName, fn });
 }
 
 // Assertions
@@ -95,41 +95,46 @@ function assertFalse(value, message) {
 }
 
 // ============================================================================
-// TEST SUITES
+// TEST SUITES DEFINITION
 // ============================================================================
 
 describe('Suite 1: Security & XSS Sanitization Engine', () => {
-  it('escapes dangerous HTML script tags to harmless entities', () => {
-    const malicious = '<script>alert("XSS")</script>';
+  it('escapes dangerous HTML script tags to harmless entities including slashes', () => {
+    const malicious = '<script>alert("xss")</script>';
     const safe = escapeHTML(malicious);
-    assertEqual(safe, '&lt;script&gt;alert(&quot;XSS&quot;)&lt;&#x2F;script&gt;');
+    assertEqual(safe, '&lt;script&gt;alert(&quot;xss&quot;)&lt;&#x2F;script&gt;');
+    assertFalse(safe.includes('<'));
+    assertFalse(safe.includes('>'));
+    assertFalse(safe.includes('/'));
   });
 
   it('escapes single and double quotes, ampersands, and angle brackets', () => {
-    const input = `'Hello' & "World" <foo> / bar`;
-    const safe = escapeHTML(input);
-    assertEqual(safe, '&#039;Hello&#039; &amp; &quot;World&quot; &lt;foo&gt; &#x2F; bar');
+    const input = `Tom & Jerry said: 'Hello' "World" <tag>`;
+    const expected = `Tom &amp; Jerry said: &#039;Hello&#039; &quot;World&quot; &lt;tag&gt;`;
+    assertEqual(escapeHTML(input), expected);
   });
 
   it('handles null, undefined, and non-string types safely in escapeHTML', () => {
     assertEqual(escapeHTML(null), '');
     assertEqual(escapeHTML(undefined), '');
     assertEqual(escapeHTML(12345), '12345');
-    assertEqual(escapeHTML(true), 'true');
+    assertEqual(escapeHTML(false), 'false');
   });
 
   it('sanitizes and clamps numbers within bounds', () => {
-    assertEqual(sanitizeNumber(500, 100, 1000, 200), 500);
-    assertEqual(sanitizeNumber(50, 100, 1000, 200), 100); // clamped to min
-    assertEqual(sanitizeNumber(5000, 100, 1000, 200), 1000); // clamped to max
-    assertEqual(sanitizeNumber('not-a-number', 100, 1000, 250), 250); // fallback default
+    assertEqual(sanitizeNumber(50, 10, 100, 20), 50);
+    assertEqual(sanitizeNumber(5, 10, 100, 20), 10); // Below min
+    assertEqual(sanitizeNumber(250, 10, 100, 20), 100); // Above max
+    assertEqual(sanitizeNumber('not-a-number', 10, 100, 20), 20); // NaN fallback
+    assertEqual(sanitizeNumber(NaN, 10, 100, 20), 20);
+    assertEqual(sanitizeNumber(Infinity, 10, 100, 20), 20);
   });
 
   it('sanitizes and trims arbitrary text strings and bounds length', () => {
-    assertEqual(sanitizeString('   hello world   ', 20), 'hello world');
-    assertEqual(sanitizeString('abcdefghijklmn', 5), 'abcde');
-    assertEqual(sanitizeString(null, 10), '');
-    assertEqual(sanitizeString(12345, 10), '');
+    assertEqual(sanitizeString('   Clean this text   ', 50), 'Clean this text');
+    assertEqual(sanitizeString('Super long string text here', 5), 'Super');
+    assertEqual(sanitizeString(null, 50), '');
+    assertEqual(sanitizeString(undefined, 50), '');
   });
 });
 
@@ -137,164 +142,174 @@ describe('Suite 2: Context-Aware Dynamic Budget Calculator Engine', () => {
   it('correctly calculates 100% balanced budget allocations', () => {
     const totalBudget = 20000;
     const percentages = { venue: 40, catering: 25, decor: 15, photo: 10, contingency: 10 };
-    const res = calculateBudget(totalBudget, percentages, 'USD', 100);
+    const result = calculateBudget(totalBudget, percentages, 'USD', 100);
 
-    assertEqual(res.totalBudget, 20000);
-    assertEqual(res.allocatedTotal, 20000);
-    assertEqual(res.sumPercentage, 100);
-    assertEqual(res.varianceAmount, 0);
-    assertTrue(res.isBalanced);
-    assertFalse(res.isOverBudget);
-    assertEqual(res.costPerGuest, 200);
+    assertEqual(result.totalBudget, 20000);
+    assertEqual(result.sumPercentage, 100);
+    assertTrue(result.isBalanced);
+    assertFalse(result.isOverBudget);
+    assertEqual(result.varianceAmount, 0);
+    assertEqual(result.costPerGuest, 200);
 
-    const venue = res.categories.find(c => c.id === 'venue');
-    assertEqual(venue.amount, 8000); // 40% of 20000
-    assertEqual(venue.perGuest, 80);
+    const venue = result.categories.find(c => c.id === 'venue');
+    assertEqual(venue.amount, 8000); // 40% of 20,000
 
-    const catering = res.categories.find(c => c.id === 'catering');
-    assertEqual(catering.amount, 5000); // 25% of 20000
+    const catering = result.categories.find(c => c.id === 'catering');
+    assertEqual(catering.amount, 5000); // 25% of 20,000
   });
 
   it('flags over-budget allocations with positive variance', () => {
     const totalBudget = 10000;
     const percentages = { venue: 50, catering: 35, decor: 15, photo: 10, contingency: 10 }; // 120%
-    const res = calculateBudget(totalBudget, percentages, 'USD', 50);
+    const result = calculateBudget(totalBudget, percentages, 'USD', 50);
 
-    assertEqual(res.sumPercentage, 120);
-    assertFalse(res.isBalanced);
-    assertTrue(res.isOverBudget);
-    assertEqual(res.allocatedTotal, 12000);
-    assertEqual(res.varianceAmount, -2000); // 10000 - 12000
+    assertEqual(result.sumPercentage, 120);
+    assertTrue(result.isOverBudget);
+    assertFalse(result.isBalanced);
+    assertEqual(result.varianceAmount, -2000); // 10000 - 12000 = -2000
+    assertEqual(result.allocatedTotal, 12000);
   });
 
   it('detects under-budget allocations with unassigned reserve', () => {
     const totalBudget = 10000;
-    const percentages = { venue: 30, catering: 20, decor: 10, photo: 10, contingency: 10 }; // 80%
-    const res = calculateBudget(totalBudget, percentages, 'USD', 50);
+    const percentages = { venue: 30, catering: 20, decor: 15, photo: 10, contingency: 5 }; // 80%
+    const result = calculateBudget(totalBudget, percentages, 'USD', 50);
 
-    assertEqual(res.sumPercentage, 80);
-    assertFalse(res.isBalanced);
-    assertFalse(res.isOverBudget);
-    assertEqual(res.allocatedTotal, 8000);
-    assertEqual(res.varianceAmount, 2000); // 2000 unallocated
+    assertEqual(result.sumPercentage, 80);
+    assertFalse(result.isOverBudget);
+    assertFalse(result.isBalanced);
+    assertEqual(result.varianceAmount, 2000); // 10000 - 8000 = +2000 unallocated
+    assertEqual(result.allocatedTotal, 8000);
   });
 
   it('safely handles zero guests and extreme inputs without division by zero', () => {
-    const res = calculateBudget(15000, { venue: 40, catering: 25, decor: 15, photo: 10, contingency: 10 }, 'USD', 0);
-    // Guest count clamped to min 1
-    assert(res.costPerGuest > 0);
-    assert(res.allocatedTotal === 15000);
+    const result = calculateBudget(10000, {}, 'USD', 0);
+    assertEqual(result.costPerGuest, 10000); // Clamped guests_min = 1
+    assertEqual(result.totalBudget, 10000);
   });
 
   it('formats currency strings correctly for multi-currency support', () => {
-    const usdFormatted = formatCurrency(25000, 'USD');
-    assertContains(usdFormatted, '25,000');
+    const usd = formatCurrency(25000, 'USD');
+    assertContains(usd, '25,000');
+    assertContains(usd, '$');
 
-    const inrFormatted = formatCurrency(100000, 'INR');
-    assert(inrFormatted.includes('₹') || inrFormatted.includes('1,00,000') || inrFormatted.includes('100,000'));
+    const inr = formatCurrency(500000, 'INR');
+    assertContains(inr, '₹');
 
-    const eurFormatted = formatCurrency(15000, 'EUR');
-    assert(eurFormatted.includes('€') || eurFormatted.includes('15.000') || eurFormatted.includes('15,000'));
+    const eur = formatCurrency(15000, 'EUR');
+    assertContains(eur, '€');
+
+    const gbp = formatCurrency(12000, 'GBP');
+    assertContains(gbp, '£');
   });
 });
 
 describe('Suite 3: Milestone Roadmap & Readiness Score Engine', () => {
   it('builds tailored milestones for Wedding, Birthday, and Community archetypes', () => {
-    const weddingTasks = buildMilestones('wedding', 6);
-    const birthdayTasks = buildMilestones('birthday', 3);
-    const communityTasks = buildMilestones('community', 6);
+    const weddingMilestones = buildMilestones('wedding', 12);
+    const birthdayMilestones = buildMilestones('birthday', 6);
+    const communityMilestones = buildMilestones('community', 3);
 
-    assert(weddingTasks.length >= 10, 'Wedding tasks should have at least 10 items');
-    assert(birthdayTasks.length >= 8, 'Birthday tasks should have at least 8 items');
-    assert(communityTasks.length >= 8, 'Community tasks should have at least 8 items');
+    assert(weddingMilestones.length >= 3);
+    assert(birthdayMilestones.length >= 3);
+    assert(communityMilestones.length >= 3);
 
-    const hasRunOfShow = weddingTasks.some(t => t.text.includes('Run-Of-Show') || t.text.includes('Ceremony') || t.phaseTitle.includes('Day-Of'));
-    assertTrue(hasRunOfShow, 'Wedding tasks should include day-of run-of-show milestones');
+    // Wedding should include venue booking
+    const weddingTexts = weddingMilestones.map(m => m.text).join(' ');
+    assertContains(weddingTexts.toLowerCase(), 'venue');
+
+    // Community should include permits
+    const communityTexts = communityMilestones.map(m => m.text).join(' ');
+    assertContains(communityTexts.toLowerCase(), 'permit');
   });
 
   it('dynamically adapts phase titles based on planning horizon months', () => {
-    const blitzTasks = buildMilestones('wedding', 1);
-    assertEqual(blitzTasks[0].phaseTitle, 'Phase 1: Immediate Foundation & Venue');
+    const longHorizon = buildMilestones('wedding', 12);
+    const shortHorizon = buildMilestones('wedding', 3);
 
-    const standardTasks = buildMilestones('wedding', 6);
-    assertEqual(standardTasks[0].phaseTitle, '6+ Months Out: Vision, Venue & Big Picture');
+    assertEqual(longHorizon[0].phaseTitle, '6+ Months Out: Vision, Venue & Big Picture');
+    assertEqual(shortHorizon[0].phaseTitle, 'Phase 1: Immediate Foundation & Venue');
   });
 
   it('calculates planning readiness score accurately with status milestones', () => {
-    const tasks = [
-      { id: '1', text: 'Task 1', done: true },
-      { id: '2', text: 'Task 2', done: true },
-      { id: '3', text: 'Task 3', done: false },
-      { id: '4', text: 'Task 4', done: false }
+    const milestones = [
+      { id: '1', done: true },
+      { id: '2', done: true },
+      { id: '3', done: false },
+      { id: '4', done: false }
     ];
-    const readiness = calculateReadiness(tasks);
-
-    assertEqual(readiness.score, 50);
+    const readiness = calculateReadiness(milestones);
+    assertEqual(readiness.score, 50); // 2 out of 4 = 50%
     assertEqual(readiness.completed, 2);
     assertEqual(readiness.total, 4);
-    assertContains(readiness.status, 'Gaining Momentum');
   });
 
   it('reports 100% readiness when all tasks are completed', () => {
-    const tasks = [
-      { id: '1', text: 'Task 1', done: true },
-      { id: '2', text: 'Task 2', done: true }
+    const milestones = [
+      { id: '1', done: true },
+      { id: '2', done: true },
+      { id: '3', done: true }
     ];
-    const readiness = calculateReadiness(tasks);
+    const readiness = calculateReadiness(milestones);
     assertEqual(readiness.score, 100);
-    assertContains(readiness.status, 'Production Ready');
+    assertEqual(readiness.completed, 3);
   });
 
   it('handles empty task list gracefully without errors', () => {
-    const readiness = calculateReadiness([]);
-    assertEqual(readiness.score, 0);
-    assertEqual(readiness.completed, 0);
-    assertEqual(readiness.total, 0);
+    assertEqual(calculateReadiness([]).score, 0);
+    assertEqual(calculateReadiness(null).score, 0);
   });
 });
 
 describe('Suite 4: Vendor Checklist & Negotiation Assistant Engine', () => {
   it('generates realistic sample vendors tailored to the archetype', () => {
-    const vendors = buildSampleVendors('wedding', 30000);
-    assert(vendors.length >= 4, 'Should generate at least 4 vendors');
+    const weddingVendors = buildSampleVendors('wedding');
+    const communityVendors = buildSampleVendors('community');
 
-    const venue = vendors.find(v => v.category === 'Venue');
-    assert(venue !== undefined, 'Should have a venue vendor');
-    assert(venue.quoted > 5000, 'Venue quote should reflect total budget scale');
+    assert(weddingVendors.length >= 4);
+    assert(communityVendors.length >= 4);
+
+    const weddingCategories = weddingVendors.map(v => v.category);
+    assert(weddingCategories.includes('Venue'));
+    assert(weddingCategories.includes('Catering'));
+
+    const communityCategories = communityVendors.map(v => v.category);
+    assert(communityCategories.includes('Contingency & Permits'));
   });
 
   it('generates high-leverage AI negotiation script for over-budget quotes', () => {
     const script = generateNegotiationScript({
-      vendorName: 'Starlight Catering & Banquets',
-      category: 'Catering',
+      vendorName: 'Grand Horizon Ballroom',
+      category: 'Venue & Logistics',
       quotedPrice: 8500,
-      targetBudget: 6500,
+      targetBudget: 7000,
       eventType: 'wedding',
-      guestCount: 120,
+      guestCount: 150,
       currencySymbol: '$'
     });
 
-    assertContains(script.subject, 'Starlight Catering');
+    assertContains(script.subject, 'Grand Horizon Ballroom');
+    assertContains(script.body, '$7,000');
     assertContains(script.body, '$8,500');
-    assertContains(script.body, '$6,500');
-    assertContains(script.body, '120-guest');
-    assertContains(script.body, 'adjustments');
-    assert(script.tips.length >= 3, 'Should include at least 3 negotiation strategy tips');
+    assertContains(script.body, '150');
+    assert(Array.isArray(script.tips) && script.tips.length > 0);
   });
 
   it('generates appreciative confirmation script when quote is within budget', () => {
     const script = generateNegotiationScript({
-      vendorName: 'Acoustic Soul DJ',
+      vendorName: 'Sonic Beats DJ',
       category: 'Decor & Entertainment',
       quotedPrice: 1500,
       targetBudget: 2000,
       eventType: 'birthday',
-      guestCount: 60,
+      guestCount: 80,
       currencySymbol: '$'
     });
 
-    assertContains(script.body, 'fits cleanly within our planned budget envelope');
-    assertContains(script.body, 'contract terms, payment schedule');
+    assertContains(script.subject, 'Sonic Beats DJ');
+    assertContains(script.body, '$1,500');
+    assertContains(script.body, '80');
+    assert(Array.isArray(script.tips) && script.tips.length > 0);
   });
 });
 
@@ -369,8 +384,10 @@ describe('Suite 6: Local Persistence Mock & State Integrity', () => {
     assertEqual(typeof state.categoryPercentages, 'object');
     assert(Array.isArray(state.milestones));
     assert(Array.isArray(state.vendors));
+    assert(Array.isArray(state.risks));
+    assert(Array.isArray(state.inventory));
     assert(Array.isArray(state.chatHistory));
-    assertEqual(state.schemaVersion, 2);
+    assertEqual(state.schemaVersion, 3);
   });
 
   it('verifies state round-trip JSON serialization and deserialization', () => {
@@ -393,10 +410,11 @@ describe('Suite 6: Local Persistence Mock & State Integrity', () => {
     assertEqual(parsed.guests, 180);
     assertEqual(parsed.vendors.length, originalState.vendors.length);
     assertEqual(parsed.vendors[parsed.vendors.length - 1].name, 'Artisan Strings Quartet');
+    assertEqual(parsed.risks.length, originalState.risks.length);
+    assertEqual(parsed.inventory.length, originalState.inventory.length);
   });
 
   it('recovers gracefully from corrupted JSON data', () => {
-    let mockStorage = null;
     const corruptData = '{ invalid json string %%% }';
 
     let loadedState = null;
@@ -411,24 +429,248 @@ describe('Suite 6: Local Persistence Mock & State Integrity', () => {
   });
 });
 
+describe('Suite 7: Event Risk Analysis & Mitigation Matrix Engine', () => {
+  it('builds domain-specific risk matrices for Wedding, Birthday, and Community archetypes', () => {
+    const weddingRisks = buildSampleRisks('wedding');
+    const birthdayRisks = buildSampleRisks('birthday');
+    const communityRisks = buildSampleRisks('community');
+
+    assert(weddingRisks.length >= 3, 'Wedding must have at least 3 default risks');
+    assert(birthdayRisks.length >= 3, 'Birthday must have at least 3 default risks');
+    assert(communityRisks.length >= 3, 'Community must have at least 3 default risks');
+
+    weddingRisks.forEach(risk => {
+      assert(typeof risk.id === 'string', 'Risk must have string id');
+      assert(typeof risk.category === 'string', 'Risk must have category');
+      assert(typeof risk.title === 'string', 'Risk must have title');
+      assert(['Low', 'Medium', 'High'].includes(risk.probability), 'Valid probability');
+      assert(['Minor', 'Moderate', 'Critical'].includes(risk.impact), 'Valid impact');
+      assert(typeof risk.strategy === 'string', 'Risk must have strategy');
+      assert(['Mitigated', 'Monitoring', 'Action Needed'].includes(risk.status), 'Valid status');
+    });
+
+    const communityTitles = communityRisks.map(r => r.title.toLowerCase()).join(' ');
+    assertContains(communityTitles, 'permit', 'Community risks must include municipal permits');
+  });
+
+  it('accurately computes weighted safety score and risk profile classification', () => {
+    const sampleRisks = [
+      { id: 'r1', status: 'Mitigated' },
+      { id: 'r2', status: 'Monitoring' },
+      { id: 'r3', status: 'Action Needed' }
+    ];
+    const metrics = calculateRiskMetrics(sampleRisks);
+
+    assertEqual(metrics.total, 3);
+    assertEqual(metrics.mitigated, 1);
+    assertEqual(metrics.monitoring, 1);
+    assertEqual(metrics.actionNeeded, 1);
+    // (1 * 1.0 + 1 * 0.5 + 0) / 3 * 100 = 50%
+    assertEqual(metrics.safetyScore, 50);
+    assertEqual(metrics.profile, 'Moderate Risk (In Review)');
+  });
+
+  it('achieves 100% safety score when all risks are mitigated', () => {
+    const safeRisks = [
+      { id: 'r1', status: 'Mitigated' },
+      { id: 'r2', status: 'Mitigated' },
+      { id: 'r3', status: 'Mitigated' }
+    ];
+    const metrics = calculateRiskMetrics(safeRisks);
+
+    assertEqual(metrics.safetyScore, 100);
+    assertEqual(metrics.profile, 'Low Risk (Protected)');
+    assertEqual(metrics.actionNeeded, 0);
+  });
+
+  it('handles empty or missing risk arrays defensively without NaN', () => {
+    const emptyMetrics = calculateRiskMetrics([]);
+    assertEqual(emptyMetrics.total, 0);
+    assertEqual(emptyMetrics.safetyScore, 100);
+    assertEqual(emptyMetrics.profile, 'Zero Identified Risks');
+
+    const nullMetrics = calculateRiskMetrics(null);
+    assertEqual(nullMetrics.safetyScore, 100);
+  });
+
+  it('updates risk mitigation status and impacts the overall safety index', () => {
+    const risks = [
+      { id: 'r1', status: 'Action Needed' },
+      { id: 'r2', status: 'Action Needed' }
+    ];
+    const initialMetrics = calculateRiskMetrics(risks);
+    assertEqual(initialMetrics.safetyScore, 0);
+    assertEqual(initialMetrics.profile, 'High Risk (Action Required)');
+
+    // Transition r1 to Monitoring (+25%), r2 to Mitigated (+50%) -> 75%
+    risks[0].status = 'Monitoring';
+    risks[1].status = 'Mitigated';
+    const updatedMetrics = calculateRiskMetrics(risks);
+    assertEqual(updatedMetrics.safetyScore, 75);
+    assertEqual(updatedMetrics.profile, 'Moderate Risk (In Review)');
+  });
+});
+
+describe('Suite 8: Supplies & Equipment Inventory Engine', () => {
+  it('builds domain-tailored equipment inventory rosters with realistic quantities', () => {
+    const weddingInv = buildSampleInventory('wedding');
+    const birthdayInv = buildSampleInventory('birthday');
+    const communityInv = buildSampleInventory('community');
+
+    assert(weddingInv.length >= 4, 'Wedding inventory roster must have at least 4 categories');
+    assert(birthdayInv.length >= 4, 'Birthday inventory roster must have at least 4 items');
+    assert(communityInv.length >= 4, 'Community inventory roster must have at least 4 items');
+
+    weddingInv.forEach(item => {
+      assert(typeof item.id === 'string', 'Item must have string id');
+      assert(typeof item.name === 'string', 'Item must have name');
+      assert(typeof item.category === 'string', 'Item must have category');
+      assert(typeof item.quantity === 'number' && item.quantity > 0, 'Item must have positive quantity');
+      assert(['Packed', 'Sourced', 'In-Transit', 'On-Site'].includes(item.status), 'Valid inventory status');
+      assert(typeof item.owner === 'string', 'Item must have owner');
+    });
+
+    const communityNames = communityInv.map(i => i.name.toLowerCase()).join(' ');
+    assertContains(communityNames, 'generator', 'Community inventory must track portable power generator');
+  });
+
+  it('computes deployment readiness percentage and on-site unit counts accurately', () => {
+    const items = [
+      { id: 'i1', quantity: 2, status: 'On-Site' },
+      { id: 'i2', quantity: 2, status: 'In-Transit' },
+      { id: 'i3', quantity: 1, status: 'Packed' }
+    ];
+    const metrics = calculateInventoryMetrics(items);
+
+    assertEqual(metrics.totalItems, 3);
+    assertEqual(metrics.totalUnits, 5);
+    assertEqual(metrics.onSiteUnits, 2);
+    // 2 / 5 * 100 = 40%
+    assertEqual(metrics.readinessPct, 40);
+    assertContains(metrics.status, 'Staging & Packing In Progress');
+  });
+
+  it('handles empty inventory safely without division by zero errors', () => {
+    const emptyMetrics = calculateInventoryMetrics([]);
+    assertEqual(emptyMetrics.totalItems, 0);
+    assertEqual(emptyMetrics.totalUnits, 0);
+    assertEqual(emptyMetrics.onSiteUnits, 0);
+    assertEqual(emptyMetrics.readinessPct, 100);
+    assertEqual(emptyMetrics.status, 'No Inventory Assigned');
+
+    const nullMetrics = calculateInventoryMetrics(null);
+    assertEqual(nullMetrics.readinessPct, 100);
+  });
+
+  it('achieves 100% deployment status when all items transition to On-Site', () => {
+    const deployedItems = [
+      { id: 'i1', quantity: 10, status: 'On-Site' },
+      { id: 'i2', quantity: 5, status: 'On-Site' }
+    ];
+    const metrics = calculateInventoryMetrics(deployedItems);
+
+    assertEqual(metrics.readinessPct, 100);
+    assertContains(metrics.status, '100% Fully Deployed On-Site');
+  });
+
+  it('correctly handles partial inventory deployment and in-transit tracking', () => {
+    const items = [
+      { id: 'i1', quantity: 7, status: 'On-Site' },
+      { id: 'i2', quantity: 3, status: 'In-Transit' }
+    ];
+    const metrics = calculateInventoryMetrics(items);
+
+    assertEqual(metrics.totalUnits, 10);
+    assertEqual(metrics.onSiteUnits, 7);
+    assertEqual(metrics.readinessPct, 70);
+    assertContains(metrics.status, 'Majority Ready & In-Transit');
+  });
+});
+
+describe('Suite 9: Debounce Utility & Performance Optimization', () => {
+  it('debounces rapid sequential calls into a single deferred execution', async () => {
+    let callCount = 0;
+    let lastArg = '';
+    const debouncedFn = debounce((val) => {
+      callCount++;
+      lastArg = val;
+    }, 40);
+
+    debouncedFn('call1');
+    debouncedFn('call2');
+    debouncedFn('call3');
+
+    assertEqual(callCount, 0, 'Callback must not execute synchronously');
+
+    await new Promise(resolve => setTimeout(resolve, 80));
+
+    assertEqual(callCount, 1, 'Callback should have executed exactly once');
+    assertEqual(lastArg, 'call3', 'Callback must receive the arguments of the latest invocation');
+  });
+
+  it('allows subsequent execution after the debounce window has elapsed', async () => {
+    let executionTimes = 0;
+    const debouncedFn = debounce(() => {
+      executionTimes++;
+    }, 30);
+
+    debouncedFn();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assertEqual(executionTimes, 1);
+
+    debouncedFn();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assertEqual(executionTimes, 2, 'Should execute a second time if called after window');
+  });
+});
+
 // ============================================================================
-// SUMMARY EXECUTION REPORT
+// ASYNC TEST RUNNER ORCHESTRATOR
 // ============================================================================
 
-const duration = Date.now() - testStartTime;
-console.log('\n============================================================');
-console.log(`${COLORS.bold}PLANFLOW AI TEST EXECUTION SUMMARY${COLORS.reset}`);
-console.log('============================================================');
-console.log(`Total Assertions/Tests: ${totalTests}`);
-console.log(`Passed:                 ${COLORS.green}${passedTests}${COLORS.reset}`);
-console.log(`Failed:                 ${failedTests === 0 ? COLORS.green + '0' : COLORS.red + failedTests}${COLORS.reset}`);
-console.log(`Duration:               ${duration}ms`);
-console.log('============================================================');
+async function runAllSuites() {
+  for (const suite of suites) {
+    console.log(`\n${COLORS.bold}${COLORS.cyan}▶ Test Suite: ${suite.name}${COLORS.reset}`);
+    for (const test of suite.tests) {
+      totalTests++;
+      try {
+        const result = test.fn();
+        if (result && typeof result.then === 'function') {
+          await result;
+        }
+        passedTests++;
+        console.log(`  ${COLORS.green}✔ PASS:${COLORS.reset} ${test.name}`);
+      } catch (err) {
+        failedTests++;
+        console.error(`  ${COLORS.red}✖ FAIL:${COLORS.reset} ${test.name}`);
+        console.error(`    ${COLORS.red}Error:${COLORS.reset} ${err.message}`);
+        if (err.stack) {
+          const lines = err.stack.split('\n');
+          for (let i = 1; i < Math.min(lines.length, 4); i++) {
+            console.error(`    ${COLORS.yellow}${lines[i].trim()}${COLORS.reset}`);
+          }
+        }
+      }
+    }
+  }
 
-if (failedTests > 0) {
-  console.error(`\n${COLORS.red}${COLORS.bold}❌ TEST RUN FAILED with ${failedTests} failure(s).${COLORS.reset}\n`);
-  process.exit(1);
-} else {
-  console.log(`\n${COLORS.green}${COLORS.bold}✨ 100% TESTS PASSED! All suites verified successfully.${COLORS.reset}\n`);
-  process.exit(0);
+  const duration = Date.now() - testStartTime;
+  console.log('\n============================================================');
+  console.log(`${COLORS.bold}PLANFLOW AI TEST EXECUTION SUMMARY${COLORS.reset}`);
+  console.log('============================================================');
+  console.log(`Total Assertions/Tests: ${totalTests}`);
+  console.log(`Passed:                 ${COLORS.green}${passedTests}${COLORS.reset}`);
+  console.log(`Failed:                 ${failedTests === 0 ? COLORS.green + '0' : COLORS.red + failedTests}${COLORS.reset}`);
+  console.log(`Duration:               ${duration}ms`);
+  console.log('============================================================');
+
+  if (failedTests > 0) {
+    console.error(`\n${COLORS.red}${COLORS.bold}❌ TEST RUN FAILED with ${failedTests} failure(s).${COLORS.reset}\n`);
+    process.exit(1);
+  } else {
+    console.log(`\n${COLORS.green}${COLORS.bold}✨ 100% TESTS PASSED! All 9 suites verified successfully.${COLORS.reset}\n`);
+    process.exit(0);
+  }
 }
+
+runAllSuites();

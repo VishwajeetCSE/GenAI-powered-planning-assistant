@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="PlanFlow AI — Production-Grade GenAI-Powered Planning Assistant for Weddings, Milestone Birthdays, and Community Events.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com; img-src 'self' data:; object-src 'none';">
+  <meta name="description" content="PlanFlow AI — Production-Grade GenAI-Powered Planning Assistant with Dynamic Budgeting, Risk Analysis, and Inventory Management.">
   <meta name="theme-color" content="#4f46e5">
   <title>PlanFlow AI — GenAI-Powered Event Planning Assistant</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -33,9 +34,11 @@
       <!-- Center Navigation Links -->
       <nav class="nav-center-links" aria-label="Main Navigation">
         <a href="#event-selector-heading" class="nav-link">Event Types</a>
-        <a href="#budget-engine-heading" class="nav-link">Budget Calculator</a>
+        <a href="#budget-engine-heading" class="nav-link">Budget</a>
         <a href="#roadmap-heading" class="nav-link">Roadmap</a>
         <a href="#vendor-heading" class="nav-link">Vendors</a>
+        <a href="#risk-heading" class="nav-link">Risks</a>
+        <a href="#inventory-heading" class="nav-link">Inventory</a>
         <a href="#plangenie-heading" class="nav-link">PlanGenie AI</a>
       </nav>
 
@@ -111,7 +114,7 @@
 
       <!-- Subtitle Description -->
       <p class="hero-description">
-        PlanFlow AI is your intelligent event companion. Tell us your event archetype, budget, and guest count — PlanGenie crafts a personalized budget breakdown, backward milestone roadmap, and negotiation strategy in seconds.
+        PlanFlow AI is your intelligent celebration companion. Tell us your event archetype, budget, and guest count — PlanGenie crafts a personalized budget breakdown, backward milestone roadmap, proactive risk matrix, and inventory deployment strategy in seconds.
       </p>
 
       <!-- Dual Action Buttons -->
@@ -128,17 +131,17 @@
       <div class="hero-stats-bar">
         <div class="hero-stat-item">
           <span class="stat-number">3</span>
-          <span class="stat-label">Event Archetypes</span>
+          <span class="stat-label">Archetypes</span>
+        </div>
+        <div class="hero-stat-divider" aria-hidden="true">•</div>
+        <div class="hero-stat-item">
+          <span class="stat-number">Risk &amp; Inventory</span>
+          <span class="stat-label">Full Architecture</span>
         </div>
         <div class="hero-stat-divider" aria-hidden="true">•</div>
         <div class="hero-stat-item">
           <span class="stat-number">100%</span>
           <span class="stat-label">Offline GenAI Fallback</span>
-        </div>
-        <div class="hero-stat-divider" aria-hidden="true">•</div>
-        <div class="hero-stat-item">
-          <span class="stat-number">0s</span>
-          <span class="stat-label">Instant Setup</span>
         </div>
       </div>
 
@@ -148,12 +151,12 @@
   <!-- Main App Container -->
   <main id="main-content" class="main-layout" role="main">
 
-    <!-- Active Event Bar & Switcher -->
+    <!-- Step 1: Active Event Bar & Switcher -->
     <section class="section-card hero-section" aria-labelledby="event-selector-heading">
       <div class="section-header">
         <div>
           <h2 id="event-selector-heading" class="section-title">Step 1: Event Type &amp; Core Constraints</h2>
-          <p class="section-desc">Select your event archetype to trigger context-aware budget algorithms and milestone roadmaps.</p>
+          <p class="section-desc">Select your event archetype to trigger context-aware budget algorithms, milestone roadmaps, risk matrices, and supplies inventory.</p>
         </div>
         <div class="status-indicator">
           <span class="status-dot pulse" aria-hidden="true"></span>
@@ -216,42 +219,42 @@
 
         <div class="form-group">
           <label for="input-timeline">Planning Horizon</label>
-          <select id="input-timeline">
+          <select id="input-timeline" aria-describedby="timeline-helper">
             <option value="1">1 Month (Urgent Blitz)</option>
             <option value="3">3 Months (Accelerated)</option>
             <option value="6" selected>6 Months (Standard Ideal)</option>
             <option value="9">9 Months (Relaxed Pace)</option>
             <option value="12">12 Months (Comprehensive Grand)</option>
           </select>
-          <span class="helper-text">Calculates backward milestone schedule</span>
+          <span id="timeline-helper" class="helper-text">Calculates backward milestone schedule</span>
         </div>
 
         <div class="form-group">
           <label for="input-location">Location Style</label>
-          <select id="input-location">
+          <select id="input-location" aria-describedby="location-helper">
             <option value="indoor" selected>Indoor Banquet / Ballroom</option>
             <option value="outdoor">Outdoor Garden / Park Pavilion</option>
             <option value="destination">Scenic Destination / Resort</option>
             <option value="virtual">Hybrid / Virtual Broadcast</option>
           </select>
-          <span class="helper-text">Impacts venue &amp; contingency ratios</span>
+          <span id="location-helper" class="helper-text">Impacts venue &amp; contingency ratios</span>
         </div>
 
         <div class="form-group">
           <label for="input-vibe">Event Vibe / Theme</label>
-          <select id="input-vibe">
+          <select id="input-vibe" aria-describedby="vibe-helper">
             <option value="modern" selected>Modern Luxury &amp; Minimalist</option>
             <option value="rustic">Rustic Charm &amp; Bohemian</option>
             <option value="eco">Eco-Friendly &amp; Sustainable</option>
             <option value="cultural">Vibrant Cultural &amp; Traditional</option>
             <option value="casual">Casual Backyard &amp; Festivity</option>
           </select>
-          <span class="helper-text">Customizes PlanGenie suggestions</span>
+          <span id="vibe-helper" class="helper-text">Customizes PlanGenie suggestions</span>
         </div>
       </form>
     </section>
 
-    <!-- Dynamic Budget Allocation Engine -->
+    <!-- Step 2: Dynamic Budget Allocation Engine -->
     <section class="section-card budget-section" aria-labelledby="budget-engine-heading">
       <div class="section-header">
         <div>
@@ -267,19 +270,19 @@
 
       <!-- Quick KPI Metric Cards -->
       <div class="kpi-grid">
-        <div class="kpi-card">
+        <div class="kpi-card" role="status" aria-live="polite">
           <span class="kpi-label">Total Allocated</span>
           <span id="kpi-total-allocated" class="kpi-value">$25,000</span>
           <span id="kpi-percentage-sum" class="kpi-subtext text-success">100% of Total Budget</span>
         </div>
 
-        <div class="kpi-card">
+        <div class="kpi-card" role="status" aria-live="polite">
           <span class="kpi-label">Est. Cost Per Guest</span>
           <span id="kpi-per-guest" class="kpi-value">$208.33</span>
           <span class="kpi-subtext">Based on 120 Attendees</span>
         </div>
 
-        <div class="kpi-card" id="kpi-card-status">
+        <div class="kpi-card" id="kpi-card-status" role="status" aria-live="polite">
           <span class="kpi-label">Budget Variance</span>
           <span id="kpi-variance-amount" class="kpi-value text-success">$0 (Balanced)</span>
           <span id="kpi-variance-status" class="kpi-subtext text-success">100% Allocated</span>
@@ -305,7 +308,7 @@
       </div>
     </section>
 
-    <!-- Planning Roadmap & Readiness Engine -->
+    <!-- Step 3: Planning Roadmap & Readiness Engine -->
     <section class="section-card timeline-section" aria-labelledby="roadmap-heading">
       <div class="section-header">
         <div>
@@ -346,7 +349,7 @@
       </div>
     </section>
 
-    <!-- Dynamic Vendor Checklist & Negotiation Assistant -->
+    <!-- Step 4: Dynamic Vendor Checklist & Negotiation Assistant -->
     <section class="section-card vendor-section" aria-labelledby="vendor-heading">
       <div class="section-header">
         <div>
@@ -413,13 +416,175 @@
       </div>
     </section>
 
-    <!-- PlanGenie: Personalized AI Event Coach -->
+    <!-- Step 5: Risk Analysis & AI Mitigation Matrix -->
+    <section class="section-card risk-section" aria-labelledby="risk-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="risk-heading" class="section-title">Step 5: Event Risk Analysis &amp; AI Mitigation Matrix</h2>
+          <p class="section-desc">Proactive identification of weather, vendor, safety, and compliance failure points with contingency protocols.</p>
+        </div>
+        <div class="risk-top-controls">
+          <div class="risk-metrics-badge-wrap">
+            <span class="readiness-label">Safety Index:</span>
+            <span id="risk-score-text" class="kpi-value text-success" style="font-size: 1.25rem;">100%</span>
+            <span id="risk-profile-badge" class="badge badge-success">Low Risk (Protected)</span>
+          </div>
+          <button id="btn-add-risk-toggle" class="btn btn-primary btn-sm">
+            ➕ Add Risk
+          </button>
+        </div>
+      </div>
+
+      <!-- Add Risk Form (Collapsible) -->
+      <form id="add-risk-form" class="add-vendor-panel hidden" aria-label="Add New Risk Item Form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="risk-title-input">Potential Risk / Threat</label>
+            <input type="text" id="risk-title-input" placeholder="e.g. Flash rainfall on outdoor tent reception" required>
+          </div>
+          <div class="form-group">
+            <label for="risk-category-select">Category</label>
+            <select id="risk-category-select">
+              <option value="Weather">Weather / Climate</option>
+              <option value="Vendor">Vendor &amp; Logistics</option>
+              <option value="Technical">Technical &amp; AV</option>
+              <option value="Safety">Safety &amp; Crowd</option>
+              <option value="Legal">Legal &amp; Permits</option>
+              <option value="Budget">Budget Creep</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="risk-prob-select">Probability</label>
+            <select id="risk-prob-select">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="risk-impact-select">Impact Level</label>
+            <select id="risk-impact-select">
+              <option value="Minor">Minor</option>
+              <option value="Moderate" selected>Moderate</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="risk-strategy-input">AI Mitigation Protocol &amp; Contingency Plan</label>
+          <input type="text" id="risk-strategy-input" placeholder="e.g. Reserve secondary indoor hall with 48h weather trigger rule" required>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-sm">Save Risk Item</button>
+          <button type="button" id="btn-cancel-risk" class="btn btn-ghost btn-sm">Cancel</button>
+        </div>
+      </form>
+
+      <!-- Risk Cards Grid -->
+      <div class="risk-cards-grid" id="risk-cards-container">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- Step 6: Supplies & Equipment Inventory Tracker -->
+    <section class="section-card inventory-section" aria-labelledby="inventory-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="inventory-heading" class="section-title">Step 6: Supplies &amp; Equipment Inventory Tracker</h2>
+          <p class="section-desc">Track essential hardware, decor, AV rigging, safety assets, and assigned team custody.</p>
+        </div>
+        <div class="inv-top-controls">
+          <div class="inv-readiness-wrap">
+            <span class="readiness-label">On-Site Deployment:</span>
+            <span id="inventory-readiness-text" class="kpi-value" style="font-size: 1.25rem;">0%</span>
+            <span id="inventory-status-badge" class="badge badge-neutral">Sourcing Underway</span>
+          </div>
+          <button id="btn-add-inventory-toggle" class="btn btn-primary btn-sm">
+            ➕ Add Item
+          </button>
+        </div>
+      </div>
+
+      <!-- Inventory Category Filters -->
+      <div class="category-filter-bar" role="tablist" aria-label="Filter inventory by category">
+        <button class="filter-chip inv-filter-chip active" data-filter="all" role="tab" aria-selected="true">All Items</button>
+        <button class="filter-chip inv-filter-chip" data-filter="AV & Tech" role="tab" aria-selected="false">AV &amp; Tech</button>
+        <button class="filter-chip inv-filter-chip" data-filter="Decor" role="tab" aria-selected="false">Decor</button>
+        <button class="filter-chip inv-filter-chip" data-filter="Signage" role="tab" aria-selected="false">Signage</button>
+        <button class="filter-chip inv-filter-chip" data-filter="Dining" role="tab" aria-selected="false">Dining</button>
+        <button class="filter-chip inv-filter-chip" data-filter="Safety" role="tab" aria-selected="false">Safety &amp; Emergency</button>
+      </div>
+
+      <!-- Add Inventory Form (Collapsible) -->
+      <form id="add-inventory-form" class="add-vendor-panel hidden" aria-label="Add New Inventory Item Form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="inv-name-input">Item Name</label>
+            <input type="text" id="inv-name-input" placeholder="e.g. Wireless PA Microphone & Receiver" required>
+          </div>
+          <div class="form-group">
+            <label for="inv-cat-select">Category</label>
+            <select id="inv-cat-select">
+              <option value="AV & Tech">AV &amp; Tech</option>
+              <option value="Decor">Decor</option>
+              <option value="Signage">Signage</option>
+              <option value="Dining">Dining</option>
+              <option value="Stationery">Stationery</option>
+              <option value="Safety">Safety &amp; Emergency</option>
+              <option value="Emergency">Emergency Kit</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inv-qty-input">Quantity</label>
+            <input type="number" id="inv-qty-input" min="1" step="1" value="1" required>
+          </div>
+          <div class="form-group">
+            <label for="inv-status-select">Status</label>
+            <select id="inv-status-select">
+              <option value="Packed">Packed</option>
+              <option value="Sourced">Sourced</option>
+              <option value="In-Transit">In-Transit</option>
+              <option value="On-Site">On-Site</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inv-owner-input">Assigned Custody / Lead</label>
+            <input type="text" id="inv-owner-input" placeholder="e.g. Sound Engineer" required>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-sm">Save Inventory Item</button>
+          <button type="button" id="btn-cancel-inventory" class="btn btn-ghost btn-sm">Cancel</button>
+        </div>
+      </form>
+
+      <!-- Inventory Table -->
+      <div class="inv-table-responsive">
+        <table class="inv-table" aria-label="Supplies and Equipment Inventory">
+          <thead>
+            <tr>
+              <th scope="col">Item Description</th>
+              <th scope="col">Category</th>
+              <th scope="col">Quantity</th>
+              <th scope="col">Deployment Status</th>
+              <th scope="col">Assigned Lead</th>
+              <th scope="col" style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-table-body">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Step 7: PlanGenie: Personalized AI Event Coach -->
     <section class="section-card plangenie-section" aria-labelledby="plangenie-heading">
       <div class="section-header">
         <div class="plangenie-header-title">
           <div class="avatar-icon-ai" aria-hidden="true">🧞</div>
           <div>
-            <h2 id="plangenie-heading" class="section-title">PlanGenie — Contextual AI Event Coach</h2>
+            <h2 id="plangenie-heading" class="section-title">Step 7: PlanGenie — Contextual AI Event Coach</h2>
             <p class="section-desc">Interactive GenAI brainstormer with real-time budget memory, contingency solvers &amp; run-of-show generation.</p>
           </div>
         </div>

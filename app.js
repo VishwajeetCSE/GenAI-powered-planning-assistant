@@ -1,15 +1,170 @@
 /**
- * PlanFlow AI — Core Application Logic & GenAI Engine
- * Pure Vanilla JavaScript • Zero Bulky Dependencies • 100% WCAG 2.1 AA Compliant
+ * @file app.js
+ * @module PlanFlowAI
+ * @description Core Domain Engines, State Architecture & GenAI Integration for PlanFlow AI.
+ * @author VishwajeetCSE
+ * @license MIT
+ * @version 2.5.0
+ * 
+ * Strict WCAG 2.1 AA Compliant • Zero Bulky Dependencies • 100% Offline-First Heuristic Engine
  */
 
+'use strict';
+
 // ============================================================================
-// 1. SECURITY & SANITIZATION UTILITIES
+// 1. TYPE DEFINITIONS (JSDoc)
 // ============================================================================
 
 /**
- * Strict XSS prevention: Escapes unsafe characters into HTML entities.
- * @param {string} str - Raw input string
+ * @typedef {'wedding' | 'birthday' | 'community'} EventArchetype
+ * @typedef {'USD' | 'INR' | 'EUR' | 'GBP'} CurrencyCode
+ * @typedef {'Prospecting' | 'Contacted' | 'Negotiating' | 'Booked'} VendorStatus
+ * @typedef {'Low' | 'Medium' | 'High'} RiskLevel
+ * @typedef {'Mitigated' | 'Monitoring' | 'Action Needed'} RiskStatus
+ * @typedef {'Packed' | 'Sourced' | 'In-Transit' | 'On-Site'} InventoryStatus
+ */
+
+/**
+ * @typedef {Object} BudgetCategory
+ * @property {string} id - Unique category identifier
+ * @property {string} name - Display title
+ * @property {number} defaultPct - Default baseline percentage
+ * @property {string} color - Hex design token
+ * @property {string} filter - Filter category key
+ */
+
+/**
+ * @typedef {Object} RiskItem
+ * @property {string} id - Unique risk identifier
+ * @property {string} category - Risk category (Weather, Vendor, Legal, etc.)
+ * @property {string} title - Description of risk event
+ * @property {RiskLevel} probability - Likelihood (Low, Medium, High)
+ * @property {'Minor' | 'Moderate' | 'Critical'} impact - Consequence magnitude
+ * @property {string} strategy - Preventive AI mitigation strategy
+ * @property {RiskStatus} status - Current handling status
+ */
+
+/**
+ * @typedef {Object} InventoryItem
+ * @property {string} id - Unique item identifier
+ * @property {string} name - Item name
+ * @property {string} category - Supplies classification
+ * @property {number} quantity - Quantity required
+ * @property {InventoryStatus} status - Logistics status
+ * @property {string} owner - Responsible team member
+ */
+
+// ============================================================================
+// 2. CONFIGURATION & IMMUTABLE CONSTANTS
+// ============================================================================
+
+const NUMERIC_BOUNDS = Object.freeze({
+  BUDGET_MIN: 100,
+  BUDGET_MAX: 100000000,
+  BUDGET_DEFAULT: 25000,
+  GUESTS_MIN: 1,
+  GUESTS_MAX: 100000,
+  GUESTS_DEFAULT: 100,
+  TEXT_MAX_LEN: 600,
+  CHAT_MAX_LEN: 500,
+  DEBOUNCE_DELAY_MS: 150
+});
+
+const CURRENCIES = Object.freeze({
+  USD: Object.freeze({ symbol: '$', code: 'USD', locale: 'en-US' }),
+  INR: Object.freeze({ symbol: '₹', code: 'INR', locale: 'en-IN' }),
+  EUR: Object.freeze({ symbol: '€', code: 'EUR', locale: 'de-DE' }),
+  GBP: Object.freeze({ symbol: '£', code: 'GBP', locale: 'en-GB' })
+});
+
+const DEFAULT_CATEGORIES = Object.freeze([
+  Object.freeze({ id: 'venue', name: 'Venue & Logistics', defaultPct: 40, color: '#6366f1', filter: 'Venue' }),
+  Object.freeze({ id: 'catering', name: 'Catering & Drinks', defaultPct: 25, color: '#10b981', filter: 'Catering' }),
+  Object.freeze({ id: 'decor', name: 'Decor & Entertainment', defaultPct: 15, color: '#f59e0b', filter: 'Decor & Entertainment' }),
+  Object.freeze({ id: 'photo', name: 'Photography & Media', defaultPct: 10, color: '#ec4899', filter: 'Photography & Media' }),
+  Object.freeze({ id: 'contingency', name: 'Contingency & Permits', defaultPct: 10, color: '#06b6d4', filter: 'Contingency & Permits' })
+]);
+
+const ARCHETYPE_DEFAULTS = Object.freeze({
+  wedding: Object.freeze({
+    title: '💍 Wedding Celebration',
+    budget: 25000,
+    guests: 120,
+    horizon: 6,
+    location: 'indoor',
+    vibe: 'modern',
+    categoryPercentages: Object.freeze({ venue: 40, catering: 25, decor: 15, photo: 10, contingency: 10 })
+  }),
+  birthday: Object.freeze({
+    title: '🎂 Milestone Birthday',
+    budget: 8500,
+    guests: 60,
+    horizon: 3,
+    location: 'indoor',
+    vibe: 'casual',
+    categoryPercentages: Object.freeze({ venue: 30, catering: 35, decor: 20, photo: 5, contingency: 10 })
+  }),
+  community: Object.freeze({
+    title: '🤝 Community Gathering',
+    budget: 12000,
+    guests: 350,
+    horizon: 6,
+    location: 'outdoor',
+    vibe: 'cultural',
+    categoryPercentages: Object.freeze({ venue: 25, catering: 25, decor: 20, photo: 10, contingency: 20 })
+  })
+});
+
+const DEFAULT_RISKS = Object.freeze({
+  wedding: Object.freeze([
+    Object.freeze({ id: 'r-w1', category: 'Weather', title: 'Severe Rain or High Winds on Ceremony', probability: 'Medium', impact: 'Critical', strategy: 'Enact 48-hour tent reservation with clear sidewalls; stage indoor chapel backup.', status: 'Mitigated' }),
+    Object.freeze({ id: 'r-w2', category: 'Vendor', title: 'Key Caterer or Baker Transit Delay', probability: 'Low', impact: 'Critical', strategy: 'Mandate contractually a 2.5-hour early arrival buffer; designate backup local gourmet supplier.', status: 'Monitoring' }),
+    Object.freeze({ id: 'r-w3', category: 'Technical', title: 'Audio Microphone Feedback / Power Surge during Vows', probability: 'Medium', impact: 'Moderate', strategy: 'Provide dual wireless lapel mics, backup battery packs, and portable surge-protected PA.', status: 'Mitigated' }),
+    Object.freeze({ id: 'r-w4', category: 'Health', title: 'Unreported Severe Guest Dietary Allergies', probability: 'High', impact: 'Moderate', strategy: 'Pre-screen RSVPs; reserve 10 allergen-free plated backup meals with chef.', status: 'Mitigated' }),
+    Object.freeze({ id: 'r-w5', category: 'Budget', title: 'Unexpected Overtime Charges from Venue or DJ', probability: 'Medium', impact: 'Moderate', strategy: 'Reserve 10% contingency allocation specifically for overtime caps and vendor tips.', status: 'Mitigated' })
+  ]),
+  birthday: Object.freeze([
+    Object.freeze({ id: 'r-b1', category: 'Venue', title: 'Outdoor Rooftop Temperature Drop', probability: 'High', impact: 'Moderate', strategy: 'Pre-book 4 propane patio heaters and provide branded fleece wraps for guests.', status: 'Mitigated' }),
+    Object.freeze({ id: 'r-b2', category: 'Entertainment', title: 'DJ Sound System or Lighting Truss Failure', probability: 'Low', impact: 'Critical', strategy: 'Mandate redundant sound controller and pre-loaded offline playlist on auxiliary iPad.', status: 'Mitigated' }),
+    Object.freeze({ id: 'r-b3', category: 'Safety', title: 'Overcrowding & Door Entry Bottlenecks', probability: 'Medium', impact: 'Moderate', strategy: 'Issue digital QR code invites with guest list check-in at reception entrance.', status: 'Monitoring' })
+  ]),
+  community: Object.freeze([
+    Object.freeze({ id: 'r-c1', category: 'Legal', title: 'Permit Revocation / Noise Ordinance Exceedance', probability: 'Low', impact: 'Critical', strategy: 'File decibel limit compliance plan with city police 30 days prior; schedule sound check at 10 AM.', status: 'Mitigated' }),
+    Object.freeze({ id: 'r-c2', category: 'Crowd', title: 'Crowd Surge at Main Stage / Bottlenecking', probability: 'Medium', impact: 'Critical', strategy: 'Install bike-rack barricades, 15-foot wide aisles, and 4 clearly illuminated exit points.', status: 'Mitigated' }),
+    Object.freeze({ id: 'r-c3', category: 'Medical', title: 'Heat Exhaustion or Minor First-Aid Incidents', probability: 'High', impact: 'Critical', strategy: 'Staff licensed EMT tent, provide 2 free shaded hydration refill stations with electrolyte packs.', status: 'Mitigated' })
+  ])
+});
+
+const DEFAULT_INVENTORY = Object.freeze({
+  wedding: Object.freeze([
+    Object.freeze({ id: 'inv-1', name: 'Ceremony Welcome Sign & Wooden Easel', category: 'Signage', quantity: 2, status: 'On-Site', owner: 'Maid of Honor' }),
+    Object.freeze({ id: 'inv-2', name: 'Custom Guestbook & Archival Metallic Pens', category: 'Stationery', quantity: 1, status: 'Packed', owner: 'Coordinator' }),
+    Object.freeze({ id: 'inv-3', name: 'Centerpiece Taper Candles & Hurricane Glass', category: 'Decor', quantity: 24, status: 'In-Transit', owner: 'Florist' }),
+    Object.freeze({ id: 'inv-4', name: 'Wireless Handheld Mics & Audio Receiver', category: 'AV & Tech', quantity: 2, status: 'On-Site', owner: 'Sound Engineer' }),
+    Object.freeze({ id: 'inv-5', name: 'Bridal Emergency Touchup & Sewing Kit', category: 'Emergency', quantity: 1, status: 'On-Site', owner: 'Bridal Suite Lead' }),
+    Object.freeze({ id: 'inv-6', name: 'Champagne Flutes & Toasting Goblets', category: 'Dining', quantity: 150, status: 'Sourced', owner: 'Catering Lead' })
+  ]),
+  birthday: Object.freeze([
+    Object.freeze({ id: 'inv-b1', name: 'Custom Neon "Happy Birthday" LED Backdrop', category: 'Decor', quantity: 1, status: 'On-Site', owner: 'Host' }),
+    Object.freeze({ id: 'inv-b2', name: 'Subwoofer & Moving Head Stage Lights', category: 'AV & Tech', quantity: 4, status: 'In-Transit', owner: 'DJ Crew' }),
+    Object.freeze({ id: 'inv-b3', name: 'Milestone Photo Gallery Clips & Fairy Lights', category: 'Decor', quantity: 50, status: 'Packed', owner: 'Co-Host' }),
+    Object.freeze({ id: 'inv-b4', name: 'Commemorative Dessert Plates & Gold Cutlery', category: 'Dining', quantity: 80, status: 'Sourced', owner: 'Baker' })
+  ]),
+  community: Object.freeze([
+    Object.freeze({ id: 'inv-c1', name: 'Heavy-Duty Crowd Barricades & Caution Tape', category: 'Safety', quantity: 20, status: 'On-Site', owner: 'Security Lead' }),
+    Object.freeze({ id: 'inv-c2', name: '5000W Portable Generator & Cable Ramps', category: 'AV & Tech', quantity: 2, status: 'On-Site', owner: 'Logistics Manager' }),
+    Object.freeze({ id: 'inv-c3', name: 'Directional Parking Signs & Traffic Cones', category: 'Signage', quantity: 30, status: 'Packed', owner: 'Volunteer Lead' }),
+    Object.freeze({ id: 'inv-c4', name: 'First Aid Kit & Automated External Defibrillator', category: 'Safety', quantity: 2, status: 'On-Site', owner: 'EMT Staff' })
+  ])
+});
+
+// ============================================================================
+// 3. SECURITY & SANITIZATION UTILITIES
+// ============================================================================
+
+/**
+ * Strict XSS prevention: Escapes unsafe characters into safe HTML entities.
+ * @param {unknown} str - Raw input
  * @returns {string} Safe HTML-escaped string
  */
 function escapeHTML(str) {
@@ -27,7 +182,7 @@ function escapeHTML(str) {
 
 /**
  * Validates and clamps a number within safe bounds.
- * @param {any} val - Input value
+ * @param {unknown} val - Input value
  * @param {number} min - Minimum allowed bound
  * @param {number} max - Maximum allowed bound
  * @param {number} defaultVal - Fallback default
@@ -35,92 +190,61 @@ function escapeHTML(str) {
  */
 function sanitizeNumber(val, min, max, defaultVal) {
   const num = Number(val);
-  if (isNaN(num)) return defaultVal;
+  if (isNaN(num) || !isFinite(num)) return defaultVal;
   return Math.min(Math.max(num, min), max);
 }
 
 /**
- * Sanitizes and bounds arbitrary text.
- * @param {string} str - Input text
- * @param {number} maxLen - Maximum character length
+ * Sanitizes, trims, and bounds arbitrary text strings.
+ * @param {unknown} str - Input text
+ * @param {number} [maxLen=NUMERIC_BOUNDS.TEXT_MAX_LEN] - Maximum length
  * @returns {string} Trimmed, bounded string
  */
-function sanitizeString(str, maxLen = 500) {
+function sanitizeString(str, maxLen = NUMERIC_BOUNDS.TEXT_MAX_LEN) {
   if (typeof str !== 'string') return '';
   return str.trim().slice(0, maxLen);
 }
 
-// ============================================================================
-// 2. CONSTANTS & METADATA
-// ============================================================================
-
-const CURRENCIES = {
-  USD: { symbol: '$', code: 'USD', locale: 'en-US' },
-  INR: { symbol: '₹', code: 'INR', locale: 'en-IN' },
-  EUR: { symbol: '€', code: 'EUR', locale: 'de-DE' },
-  GBP: { symbol: '£', code: 'GBP', locale: 'en-GB' }
-};
-
-const DEFAULT_CATEGORIES = [
-  { id: 'venue', name: 'Venue & Logistics', defaultPct: 40, color: '#6366f1', filter: 'Venue' },
-  { id: 'catering', name: 'Catering & Drinks', defaultPct: 25, color: '#10b981', filter: 'Catering' },
-  { id: 'decor', name: 'Decor & Entertainment', defaultPct: 15, color: '#f59e0b', filter: 'Decor & Entertainment' },
-  { id: 'photo', name: 'Photography & Media', defaultPct: 10, color: '#ec4899', filter: 'Photography & Media' },
-  { id: 'contingency', name: 'Contingency & Permits', defaultPct: 10, color: '#06b6d4', filter: 'Contingency & Permits' }
-];
-
-const ARCHETYPE_DEFAULTS = {
-  wedding: {
-    title: '💍 Wedding Celebration',
-    budget: 25000,
-    guests: 120,
-    horizon: 6,
-    location: 'indoor',
-    vibe: 'modern',
-    categoryPercentages: { venue: 40, catering: 25, decor: 15, photo: 10, contingency: 10 }
-  },
-  birthday: {
-    title: '🎂 Milestone Birthday',
-    budget: 8500,
-    guests: 60,
-    horizon: 3,
-    location: 'indoor',
-    vibe: 'casual',
-    categoryPercentages: { venue: 30, catering: 35, decor: 20, photo: 5, contingency: 10 }
-  },
-  community: {
-    title: '🤝 Community Gathering',
-    budget: 12000,
-    guests: 350,
-    horizon: 6,
-    location: 'outdoor',
-    vibe: 'cultural',
-    categoryPercentages: { venue: 25, catering: 25, decor: 20, photo: 10, contingency: 20 }
-  }
-};
+/**
+ * Debounce helper for rate-limiting high-frequency input events.
+ * @param {Function} func - Callback function
+ * @param {number} wait - Wait duration in milliseconds
+ * @returns {Function} Debounced function
+ */
+function debounce(func, wait = NUMERIC_BOUNDS.DEBOUNCE_DELAY_MS) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
 
 // ============================================================================
-// 3. BUDGET CALCULATION ENGINE
+// 4. BUDGET CALCULATION ENGINE
 // ============================================================================
 
 /**
  * Computes live budget distribution, amounts, and variances.
  * @param {number} totalBudget - Overall event budget
- * @param {Object} percentages - Map of categoryId -> percentage
- * @param {string} currencyCode - USD, INR, EUR, GBP
- * @param {number} guestCount - Total guest count
+ * @param {Record<string, number>} percentages - Map of categoryId -> percentage
+ * @param {CurrencyCode} [currencyCode='USD'] - Target currency
+ * @param {number} [guestCount=NUMERIC_BOUNDS.GUESTS_DEFAULT] - Guest headcount
  * @returns {Object} Comprehensive budget telemetry
  */
-function calculateBudget(totalBudget, percentages, currencyCode = 'USD', guestCount = 100) {
-  const safeBudget = sanitizeNumber(totalBudget, 100, 100000000, 25000);
-  const safeGuests = sanitizeNumber(guestCount, 1, 100000, 100);
+function calculateBudget(totalBudget, percentages, currencyCode = 'USD', guestCount = NUMERIC_BOUNDS.GUESTS_DEFAULT) {
+  const safeBudget = sanitizeNumber(totalBudget, NUMERIC_BOUNDS.BUDGET_MIN, NUMERIC_BOUNDS.BUDGET_MAX, NUMERIC_BOUNDS.BUDGET_DEFAULT);
+  const safeGuests = sanitizeNumber(guestCount, NUMERIC_BOUNDS.GUESTS_MIN, NUMERIC_BOUNDS.GUESTS_MAX, NUMERIC_BOUNDS.GUESTS_DEFAULT);
   const currency = CURRENCIES[currencyCode] || CURRENCIES.USD;
 
   let sumPct = 0;
   const categoriesBreakdown = [];
 
   for (const cat of DEFAULT_CATEGORIES) {
-    const rawPct = percentages[cat.id] !== undefined ? percentages[cat.id] : cat.defaultPct;
+    const rawPct = percentages && percentages[cat.id] !== undefined ? percentages[cat.id] : cat.defaultPct;
     const pct = sanitizeNumber(rawPct, 0, 100, cat.defaultPct);
     sumPct += pct;
     const amount = Math.round((safeBudget * pct) / 100);
@@ -158,9 +282,9 @@ function calculateBudget(totalBudget, percentages, currencyCode = 'USD', guestCo
 
 /**
  * Formats a numeric currency value.
- * @param {number} amount - Numeric value
- * @param {string} currencyCode - USD, INR, etc.
- * @returns {string} Formatted currency string
+ * @param {number} amount - Numeric amount
+ * @param {CurrencyCode} [currencyCode='USD'] - Currency identifier
+ * @returns {string} Formatted localized currency string
  */
 function formatCurrency(amount, currencyCode = 'USD') {
   const curr = CURRENCIES[currencyCode] || CURRENCIES.USD;
@@ -176,19 +300,18 @@ function formatCurrency(amount, currencyCode = 'USD') {
 }
 
 // ============================================================================
-// 4. TIMELINE & MILESTONE ROADMAP ENGINE
+// 5. TIMELINE & MILESTONE ROADMAP ENGINE
 // ============================================================================
 
 /**
  * Builds default timeline milestones tailored to event archetype and horizon.
- * @param {string} eventType - wedding, birthday, community
- * @param {number} horizonMonths - planning horizon in months
- * @returns {Array} List of milestone phases with actionable tasks
+ * @param {EventArchetype} [eventType='wedding'] - Archetype
+ * @param {number} [horizonMonths=6] - Planning horizon in months
+ * @returns {Array<Object>} List of milestone phases with actionable tasks
  */
 function buildMilestones(eventType = 'wedding', horizonMonths = 6) {
   const horizon = Number(horizonMonths) || 6;
 
-  // Custom phase labels adapted to planning horizon
   const phase1Title = horizon >= 6 ? '6+ Months Out: Vision, Venue & Big Picture' : 'Phase 1: Immediate Foundation & Venue';
   const phase2Title = horizon >= 3 ? '3 Months Out: Vendors, Catering & Bookings' : 'Phase 2: Core Vendor Commitments';
   const phase3Title = horizon >= 2 ? '1 Month Out: RSVPs, Decor & Logistics' : 'Phase 3: Final Details & Guest Count';
@@ -229,7 +352,7 @@ function buildMilestones(eventType = 'wedding', horizonMonths = 6) {
     { id: 'c-2', phaseId: 'phase-1', phaseTitle: phase1Title, text: 'Secure primary event grounds & establish emergency evacuation plan', done: false },
     { id: 'c-3', phaseId: 'phase-2', phaseTitle: phase2Title, text: 'Recruit and assign volunteer team leads (Registration, Crowd, Cleanup)', done: false },
     { id: 'c-4', phaseId: 'phase-2', phaseTitle: phase2Title, text: 'Contract stage, generator, sound/PA system & certified audio engineer', done: false },
-    { id: 'c-5', phaseId: 'phase-3', phaseTitle: phase3Title, text: 'Coordinate food truck permits, waste/recycling receptacles & portable sanitation', done: false },
+    { id: 'c-5', phaseId: 'phase-3', phaseTitle: phase3Title, text: 'Coordinate food truck permits, waste receptacles & portable sanitation', done: false },
     { id: 'c-6', phaseId: 'phase-3', phaseTitle: phase3Title, text: 'Distribute neighborhood flyers, press release & social announcements', done: false },
     { id: 'c-7', phaseId: 'phase-4', phaseTitle: phase4Title, text: 'Conduct weather forecast check & prepare rain tarp/pavilion contingency', done: false },
     { id: 'c-8', phaseId: 'phase-5', phaseTitle: phase5Title, text: '06:30 AM Vendor load-in, parking barricades & generator power-up', done: false },
@@ -244,7 +367,7 @@ function buildMilestones(eventType = 'wedding', horizonMonths = 6) {
 
 /**
  * Calculates Planning Readiness Score based on completed checklist items.
- * @param {Array} tasks - Array of task objects
+ * @param {Array<Object>} [tasks=[]] - Array of task objects
  * @returns {Object} Score details { score, completed, total, status }
  */
 function calculateReadiness(tasks = []) {
@@ -265,17 +388,17 @@ function calculateReadiness(tasks = []) {
 }
 
 // ============================================================================
-// 5. VENDOR CHECKLIST & TRACKER ENGINE
+// 6. VENDOR CHECKLIST & TRACKER ENGINE
 // ============================================================================
 
 /**
  * Builds realistic sample vendors tailored to the event archetype.
- * @param {string} eventType - wedding, birthday, community
- * @param {number} totalBudget - total event budget
- * @returns {Array} List of vendor records
+ * @param {EventArchetype} [eventType='wedding'] - Event Archetype
+ * @param {number} [totalBudget=NUMERIC_BOUNDS.BUDGET_DEFAULT] - Total event budget
+ * @returns {Array<Object>} List of vendor records
  */
-function buildSampleVendors(eventType = 'wedding', totalBudget = 25000) {
-  const b = totalBudget || 25000;
+function buildSampleVendors(eventType = 'wedding', totalBudget = NUMERIC_BOUNDS.BUDGET_DEFAULT) {
+  const b = totalBudget || NUMERIC_BOUNDS.BUDGET_DEFAULT;
   if (eventType === 'wedding') {
     return [
       { id: 'v-1', name: 'Grand Ballroom & Gardens', category: 'Venue', quoted: Math.round(b * 0.38), status: 'Booked', notes: 'Includes tables, chiavari chairs & bridal suite.' },
@@ -302,7 +425,7 @@ function buildSampleVendors(eventType = 'wedding', totalBudget = 25000) {
 }
 
 // ============================================================================
-// 6. AI NEGOTIATION SCRIPT GENERATOR
+// 7. AI NEGOTIATION SCRIPT GENERATOR
 // ============================================================================
 
 /**
@@ -365,7 +488,112 @@ Event Planning Host`;
 }
 
 // ============================================================================
-// 7. PLANGENIE CONTEXTUAL AI COACH ENGINE
+// 8. RISK ANALYSIS & MITIGATION ENGINE
+// ============================================================================
+
+/**
+ * Builds baseline risk items tailored to the active event archetype.
+ * @param {EventArchetype} [eventType='wedding'] - Event Archetype
+ * @returns {Array<RiskItem>} Initialized risk items
+ */
+function buildSampleRisks(eventType = 'wedding') {
+  const archetypeRisks = DEFAULT_RISKS[eventType] || DEFAULT_RISKS.wedding;
+  return archetypeRisks.map(r => ({ ...r }));
+}
+
+/**
+ * Calculates overall Risk Assessment Metrics & Safety Score.
+ * @param {Array<RiskItem>} [risks=[]] - Array of risk items
+ * @returns {Object} Comprehensive risk metrics
+ */
+function calculateRiskMetrics(risks = []) {
+  if (!Array.isArray(risks) || risks.length === 0) {
+    return {
+      total: 0,
+      mitigated: 0,
+      monitoring: 0,
+      actionNeeded: 0,
+      safetyScore: 100,
+      profile: 'Zero Identified Risks'
+    };
+  }
+
+  const total = risks.length;
+  const mitigated = risks.filter(r => r.status === 'Mitigated').length;
+  const monitoring = risks.filter(r => r.status === 'Monitoring').length;
+  const actionNeeded = risks.filter(r => r.status === 'Action Needed').length;
+
+  // Weighted safety score: Mitigated = 1.0, Monitoring = 0.5, Action Needed = 0
+  const weightedScore = Math.round(((mitigated * 1.0 + monitoring * 0.5) / total) * 100);
+
+  let profile = 'Low Risk (Protected)';
+  if (weightedScore < 50) profile = 'High Risk (Action Required)';
+  else if (weightedScore < 80) profile = 'Moderate Risk (In Review)';
+
+  return {
+    total,
+    mitigated,
+    monitoring,
+    actionNeeded,
+    safetyScore: weightedScore,
+    profile
+  };
+}
+
+// ============================================================================
+// 9. SUPPLIES & EQUIPMENT INVENTORY ENGINE
+// ============================================================================
+
+/**
+ * Builds baseline inventory supplies tailored to the active event archetype.
+ * @param {EventArchetype} [eventType='wedding'] - Event Archetype
+ * @returns {Array<InventoryItem>} Initialized inventory items
+ */
+function buildSampleInventory(eventType = 'wedding') {
+  const archetypeInventory = DEFAULT_INVENTORY[eventType] || DEFAULT_INVENTORY.wedding;
+  return archetypeInventory.map(item => ({ ...item }));
+}
+
+/**
+ * Computes Logistics & Inventory Deployment Readiness.
+ * @param {Array<InventoryItem>} [items=[]] - Array of inventory items
+ * @returns {Object} Inventory metrics
+ */
+function calculateInventoryMetrics(items = []) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return {
+      totalItems: 0,
+      totalUnits: 0,
+      onSiteUnits: 0,
+      readinessPct: 100,
+      status: 'No Inventory Assigned'
+    };
+  }
+
+  const totalItems = items.length;
+  const totalUnits = items.reduce((acc, i) => acc + (Number(i.quantity) || 1), 0);
+  const onSiteUnits = items
+    .filter(i => i.status === 'On-Site')
+    .reduce((acc, i) => acc + (Number(i.quantity) || 1), 0);
+
+  const readinessPct = totalUnits > 0 ? Math.round((onSiteUnits / totalUnits) * 100) : 0;
+
+  let status = 'Sourcing Underway';
+  if (readinessPct >= 100) status = '100% Fully Deployed On-Site 📦';
+  else if (readinessPct >= 65) status = 'Majority Ready & In-Transit 🚚';
+  else if (readinessPct >= 35) status = 'Staging & Packing In Progress 📋';
+
+  return {
+    totalItems,
+    totalUnits,
+    onSiteUnits,
+    readinessPct,
+    status
+  };
+}
+
+// ============================================================================
+// 10. PLANGENIE CONTEXTUAL AI COACH ENGINE
 // ============================================================================
 
 /**
@@ -512,21 +740,22 @@ Here are 3 high-impact recommendations for your current milestone:
  * otherwise seamlessly falls back to high-fidelity offline heuristic AI.
  * @param {string} prompt - User question
  * @param {Object} context - Plan state
- * @param {string} apiKey - Optional Gemini API key
- * @param {string} model - Gemini model name
+ * @param {string} [apiKey=''] - Optional Gemini API key
+ * @param {string} [model='gemini-1.5-flash'] - Gemini model identifier
  * @returns {Promise<string>} Response message text
  */
 async function askPlanGenie(prompt, context, apiKey = '', model = 'gemini-1.5-flash') {
-  const cleanPrompt = sanitizeString(prompt, 600);
+  const cleanPrompt = sanitizeString(prompt, NUMERIC_BOUNDS.TEXT_MAX_LEN);
   if (!cleanPrompt) {
     return 'Please enter a question or planning inquiry for PlanGenie.';
   }
 
-  // If API key is provided, attempt live Google Gemini call
-  if (apiKey && apiKey.trim().length > 10) {
+  // If valid API key format is supplied, attempt live Google Gemini call
+  const cleanKey = apiKey ? apiKey.trim() : '';
+  if (cleanKey.length >= 20 && cleanKey.startsWith('AIza')) {
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
-      const systemInstruction = `You are PlanGenie, a world-class expert event planning consultant and AI assistant.
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+      const systemInstruction = `You are PlanGenie, an expert event planning consultant and AI assistant.
 Event context:
 - Event Archetype: ${context.eventType}
 - Total Budget: ${context.currencySymbol}${context.budget}
@@ -540,9 +769,7 @@ Provide concise, actionable, expert advice using bullet points and markdown form
         contents: [
           {
             role: 'user',
-            parts: [
-              { text: `${systemInstruction}\n\nUser Question: ${cleanPrompt}` }
-            ]
+            parts: [{ text: `${systemInstruction}\n\nUser Question: ${cleanPrompt}` }]
           }
         ],
         generationConfig: {
@@ -568,7 +795,6 @@ Provide concise, actionable, expert advice using bullet points and markdown form
       }
     } catch (err) {
       console.warn('PlanGenie live Gemini call failed, falling back to local heuristic engine:', err.message);
-      // Append friendly notice and seamlessly fallback to local engine
       const localAnswer = runHeuristicAI(cleanPrompt, context);
       return `*(Operating in Offline Heuristic Mode — Note: Live API key call returned: ${escapeHTML(err.message)})*\n\n${localAnswer}`;
     }
@@ -579,7 +805,7 @@ Provide concise, actionable, expert advice using bullet points and markdown form
 }
 
 // ============================================================================
-// 8. STORAGE & PERSISTENCE ENGINE
+// 11. STORAGE & PERSISTENCE ENGINE
 // ============================================================================
 
 const STORAGE_KEY = 'planflow_ai_v2_state';
@@ -601,16 +827,18 @@ function getDefaultState() {
     categoryPercentages: { ...archetype.categoryPercentages },
     milestones: buildMilestones('wedding', archetype.horizon),
     vendors: buildSampleVendors('wedding', archetype.budget),
+    risks: buildSampleRisks('wedding'),
+    inventory: buildSampleInventory('wedding'),
     chatHistory: [
       {
         sender: 'bot',
-        text: '👋 Welcome to **PlanFlow AI**! I am **PlanGenie**, your personal event planning coach. Select an event archetype above, adjust your budget sliders, or ask me for theme concepts, run-of-show schedules, or cost-saving tricks!'
+        text: '👋 Welcome to **PlanFlow AI**! I am **PlanGenie**, your personal event planning coach. Select an event archetype above, adjust your budget sliders, inspect risks & inventory, or ask me for theme concepts and run-of-show schedules!'
       }
     ],
     theme: 'dark',
     geminiApiKey: '',
     geminiModel: 'gemini-1.5-flash',
-    schemaVersion: 2
+    schemaVersion: 3
   };
 }
 
@@ -650,14 +878,16 @@ function loadStateFromStorage() {
 }
 
 // ============================================================================
-// 9. CLIENT UI CONTROLLER (Browser Only)
+// 12. CLIENT UI CONTROLLER (Browser Only)
 // ============================================================================
 
 class PlanFlowUI {
   constructor() {
     this.state = loadStateFromStorage();
     this.activeVendorFilter = 'all';
+    this.activeInventoryFilter = 'all';
     this.activeNegotiationVendor = null;
+    this.lastChatTimestamp = 0;
   }
 
   init() {
@@ -723,7 +953,24 @@ class PlanFlowUI {
     this.filterChips = document.querySelectorAll('.filter-chip');
     this.btnCancelVendor = document.getElementById('btn-cancel-vendor');
 
-    // Section 5: PlanGenie AI
+    // Section 5: Risk Analysis
+    this.riskScoreText = document.getElementById('risk-score-text');
+    this.riskProfileBadge = document.getElementById('risk-profile-badge');
+    this.riskCardsContainer = document.getElementById('risk-cards-container');
+    this.btnAddRiskToggle = document.getElementById('btn-add-risk-toggle');
+    this.addRiskForm = document.getElementById('add-risk-form');
+    this.btnCancelRisk = document.getElementById('btn-cancel-risk');
+
+    // Section 6: Inventory
+    this.inventoryReadinessText = document.getElementById('inventory-readiness-text');
+    this.inventoryStatusBadge = document.getElementById('inventory-status-badge');
+    this.inventoryTableBody = document.getElementById('inventory-table-body');
+    this.btnAddInventoryToggle = document.getElementById('btn-add-inventory-toggle');
+    this.addInventoryForm = document.getElementById('add-inventory-form');
+    this.btnCancelInventory = document.getElementById('btn-cancel-inventory');
+    this.inventoryFilterChips = document.querySelectorAll('.inv-filter-chip');
+
+    // Section 7: PlanGenie AI
     this.contextItemType = document.getElementById('context-item-type');
     this.contextItemBudget = document.getElementById('context-item-budget');
     this.contextItemGuests = document.getElementById('context-item-guests');
@@ -853,15 +1100,23 @@ class PlanFlowUI {
       });
     });
 
-    // Core inputs
-    this.inputBudget.addEventListener('input', (e) => {
-      this.state.budget = sanitizeNumber(e.target.value, 100, 100000000, 25000);
+    // Core inputs with debounce
+    const debouncedBudgetUpdate = debounce((val) => {
+      this.state.budget = sanitizeNumber(val, NUMERIC_BOUNDS.BUDGET_MIN, NUMERIC_BOUNDS.BUDGET_MAX, NUMERIC_BOUNDS.BUDGET_DEFAULT);
       this.saveAndRender();
+    }, 150);
+
+    this.inputBudget.addEventListener('input', (e) => {
+      debouncedBudgetUpdate(e.target.value);
     });
 
-    this.inputGuests.addEventListener('input', (e) => {
-      this.state.guests = sanitizeNumber(e.target.value, 1, 50000, 100);
+    const debouncedGuestsUpdate = debounce((val) => {
+      this.state.guests = sanitizeNumber(val, NUMERIC_BOUNDS.GUESTS_MIN, NUMERIC_BOUNDS.GUESTS_MAX, NUMERIC_BOUNDS.GUESTS_DEFAULT);
       this.saveAndRender();
+    }, 150);
+
+    this.inputGuests.addEventListener('input', (e) => {
+      debouncedGuestsUpdate(e.target.value);
     });
 
     this.inputTimeline.addEventListener('change', (e) => {
@@ -947,7 +1202,7 @@ class PlanFlowUI {
       e.preventDefault();
       const name = sanitizeString(document.getElementById('vendor-name-input').value, 80);
       const category = document.getElementById('vendor-category-select').value;
-      const quoted = sanitizeNumber(document.getElementById('vendor-quoted-input').value, 0, 10000000, 1000);
+      const quoted = sanitizeNumber(document.getElementById('vendor-quoted-input').value, 0, NUMERIC_BOUNDS.BUDGET_MAX, 1000);
       const status = document.getElementById('vendor-status-select').value;
 
       if (!name) return;
@@ -968,6 +1223,109 @@ class PlanFlowUI {
       this.showToast(`Vendor "${name}" saved!`);
     });
 
+    // Add Risk toggle
+    if (this.btnAddRiskToggle) {
+      this.btnAddRiskToggle.addEventListener('click', () => {
+        const isHidden = this.addRiskForm.classList.toggle('hidden');
+        this.btnAddRiskToggle.textContent = isHidden ? '➕ Add Risk' : '✕ Close Form';
+      });
+    }
+
+    if (this.btnCancelRisk) {
+      this.btnCancelRisk.addEventListener('click', () => {
+        this.addRiskForm.classList.add('hidden');
+        this.btnAddRiskToggle.textContent = '➕ Add Risk';
+      });
+    }
+
+    // Add Risk submit
+    if (this.addRiskForm) {
+      this.addRiskForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const title = sanitizeString(document.getElementById('risk-title-input').value, 120);
+        const category = document.getElementById('risk-category-select').value;
+        const probability = document.getElementById('risk-prob-select').value;
+        const impact = document.getElementById('risk-impact-select').value;
+        const strategy = sanitizeString(document.getElementById('risk-strategy-input').value, 200);
+
+        if (!title) return;
+
+        if (!Array.isArray(this.state.risks)) this.state.risks = [];
+        this.state.risks.push({
+          id: 'risk-' + Date.now(),
+          category,
+          title,
+          probability,
+          impact,
+          strategy: strategy || 'Proactive monitoring and contingency allocation.',
+          status: 'Monitoring'
+        });
+
+        this.addRiskForm.reset();
+        this.addRiskForm.classList.add('hidden');
+        this.btnAddRiskToggle.textContent = '➕ Add Risk';
+        this.saveAndRender();
+        this.showToast('Added custom risk protocol.');
+      });
+    }
+
+    // Inventory filter tabs
+    if (this.inventoryFilterChips) {
+      this.inventoryFilterChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          this.inventoryFilterChips.forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          this.activeInventoryFilter = chip.getAttribute('data-filter') || 'all';
+          this.renderInventory();
+        });
+      });
+    }
+
+    // Add Inventory toggle
+    if (this.btnAddInventoryToggle) {
+      this.btnAddInventoryToggle.addEventListener('click', () => {
+        const isHidden = this.addInventoryForm.classList.toggle('hidden');
+        this.btnAddInventoryToggle.textContent = isHidden ? '➕ Add Item' : '✕ Close Form';
+      });
+    }
+
+    if (this.btnCancelInventory) {
+      this.btnCancelInventory.addEventListener('click', () => {
+        this.addInventoryForm.classList.add('hidden');
+        this.btnAddInventoryToggle.textContent = '➕ Add Item';
+      });
+    }
+
+    // Add Inventory submit
+    if (this.addInventoryForm) {
+      this.addInventoryForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = sanitizeString(document.getElementById('inv-name-input').value, 100);
+        const category = document.getElementById('inv-cat-select').value;
+        const quantity = sanitizeNumber(document.getElementById('inv-qty-input').value, 1, 10000, 1);
+        const status = document.getElementById('inv-status-select').value;
+        const owner = sanitizeString(document.getElementById('inv-owner-input').value, 60) || 'Lead Planner';
+
+        if (!name) return;
+
+        if (!Array.isArray(this.state.inventory)) this.state.inventory = [];
+        this.state.inventory.push({
+          id: 'inv-' + Date.now(),
+          name,
+          category,
+          quantity,
+          status,
+          owner
+        });
+
+        this.addInventoryForm.reset();
+        this.addInventoryForm.classList.add('hidden');
+        this.btnAddInventoryToggle.textContent = '➕ Add Item';
+        this.saveAndRender();
+        this.showToast(`Inventory item "${name}" added!`);
+      });
+    }
+
     // Quick Prompt Chips
     this.promptChips.forEach(chip => {
       chip.addEventListener('click', () => {
@@ -978,10 +1336,17 @@ class PlanFlowUI {
       });
     });
 
-    // Chat submit
+    // Chat submit with rate-limiting guard
     this.chatForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const query = sanitizeString(this.chatInputField.value, 400);
+      const now = Date.now();
+      if (now - this.lastChatTimestamp < 1000) {
+        this.showToast('Please wait a moment before sending another prompt.');
+        return;
+      }
+      this.lastChatTimestamp = now;
+
+      const query = sanitizeString(this.chatInputField.value, NUMERIC_BOUNDS.CHAT_MAX_LEN);
       if (!query) return;
       this.chatInputField.value = '';
       this.submitChatMessage(query);
@@ -1072,7 +1437,6 @@ class PlanFlowUI {
     this.inputLocation.value = this.state.location;
     this.inputVibe.value = this.state.vibe;
 
-    // Archetype selection
     this.archetypeCards.forEach(card => {
       const radio = card.querySelector('input[type="radio"]');
       if (radio && radio.value === this.state.eventType) {
@@ -1100,6 +1464,8 @@ class PlanFlowUI {
     this.state.categoryPercentages = { ...defaults.categoryPercentages };
     this.state.milestones = buildMilestones(newType, defaults.horizon);
     this.state.vendors = buildSampleVendors(newType, defaults.budget);
+    this.state.risks = buildSampleRisks(newType);
+    this.state.inventory = buildSampleInventory(newType);
 
     this.syncFormFromState();
     this.saveAndRender();
@@ -1118,14 +1484,14 @@ class PlanFlowUI {
   }
 
   updateAIModeLabel() {
-    const hasKey = Boolean(this.state.geminiApiKey && this.state.geminiApiKey.trim().length > 5);
+    const hasKey = Boolean(this.state.geminiApiKey && this.state.geminiApiKey.trim().length > 15);
     if (this.aiModeLabel) {
       this.aiModeLabel.textContent = hasKey ? `Gemini Live AI (${this.state.geminiModel})` : 'Local Heuristic GenAI (Offline Ready)';
     }
   }
 
   updateSettingsStatus() {
-    const hasKey = Boolean(this.geminiApiKeyInput.value && this.geminiApiKeyInput.value.trim().length > 5);
+    const hasKey = Boolean(this.geminiApiKeyInput.value && this.geminiApiKeyInput.value.trim().length > 15);
     if (this.settingsEngineStatus) {
       this.settingsEngineStatus.textContent = hasKey ? 'Google Gemini Live API Active' : 'Using Local Contextual Heuristic AI (Offline)';
     }
@@ -1147,15 +1513,16 @@ class PlanFlowUI {
       categoryPercentages: { venue: 40, catering: 25, decor: 15, photo: 10, contingency: 10 },
       milestones: buildMilestones('wedding', 6),
       vendors: buildSampleVendors('wedding', 32000),
+      risks: buildSampleRisks('wedding'),
+      inventory: buildSampleInventory('wedding'),
       chatHistory: [
         {
           sender: 'bot',
-          text: '✨ **Sample Scenario Loaded!** You are viewing a premium $32,000 Wedding for 140 guests. Check out the calculated category allocations below, try adjusting the sliders, or inspect the vendor negotiation script!'
+          text: '✨ **Sample Scenario Loaded!** You are viewing a premium $32,000 Wedding for 140 guests. Explore the dynamic budget sliders, proactive Risk Analysis Matrix, and Event Inventory tracker!'
         }
       ]
     };
 
-    // Mark 3 milestones as completed for instant readiness evaluation
     if (this.state.milestones.length > 3) {
       this.state.milestones[0].done = true;
       this.state.milestones[1].done = true;
@@ -1176,6 +1543,8 @@ class PlanFlowUI {
     this.renderBudget();
     this.renderMilestones();
     this.renderVendors();
+    this.renderRisks();
+    this.renderInventory();
     this.renderChatContext();
     this.renderChat();
   }
@@ -1189,7 +1558,6 @@ class PlanFlowUI {
       this.state.guests
     );
 
-    // KPI Cards
     this.kpiTotalAllocated.textContent = formatCurrency(budgetData.allocatedTotal, this.state.currency);
     this.kpiPercentageSum.textContent = `${budgetData.sumPercentage}% of Total Budget`;
     this.kpiPercentageSum.className = budgetData.isBalanced ? 'kpi-subtext text-success' : 'kpi-subtext text-warning';
@@ -1229,6 +1597,7 @@ class PlanFlowUI {
         seg.className = 'distribution-segment';
         seg.style.width = `${cat.percentage}%`;
         seg.style.backgroundColor = cat.color;
+        seg.setAttribute('aria-label', `${cat.name}: ${cat.percentage}%`);
         seg.title = `${cat.name}: ${cat.percentage}% (${formatCurrency(cat.amount, this.state.currency)})`;
         this.distributionBar.appendChild(seg);
       }
@@ -1261,7 +1630,6 @@ class PlanFlowUI {
         </div>
       `;
 
-      // Slider events
       const rangeInput = card.querySelector('.slider-input');
       const stepDown = card.querySelector('.btn-step-down');
       const stepUp = card.querySelector('.btn-step-up');
@@ -1296,7 +1664,6 @@ class PlanFlowUI {
     this.readinessProgressTrack.setAttribute('aria-valuenow', readiness.score);
     this.readinessBadge.textContent = readiness.status;
 
-    // Group milestones by phase
     const phases = {};
     this.state.milestones.forEach(t => {
       const pid = t.phaseId || 'general';
@@ -1417,7 +1784,6 @@ class PlanFlowUI {
         </div>
       `;
 
-      // Status change
       const statusSelect = card.querySelector('.vendor-status-select');
       statusSelect.addEventListener('change', (e) => {
         vendor.status = e.target.value;
@@ -1425,14 +1791,12 @@ class PlanFlowUI {
         this.showToast(`Updated ${vendor.name} status to ${vendor.status}`);
       });
 
-      // Notes change
       const notesInput = card.querySelector('.vendor-notes-input');
       notesInput.addEventListener('change', (e) => {
         vendor.notes = sanitizeString(e.target.value, 200);
         saveStateToStorage(this.state);
       });
 
-      // Delete vendor
       const delBtn = card.querySelector('.btn-delete-vendor');
       delBtn.addEventListener('click', () => {
         this.state.vendors = this.state.vendors.filter(v => v.id !== vendor.id);
@@ -1440,7 +1804,6 @@ class PlanFlowUI {
         this.showToast(`Removed vendor ${vendor.name}`);
       });
 
-      // AI Negotiation Script
       const negBtn = card.querySelector('.btn-negotiate');
       negBtn.addEventListener('click', () => {
         this.openNegotiationModal(vendor);
@@ -1450,7 +1813,138 @@ class PlanFlowUI {
     });
   }
 
-  // ==================== Step 5: PlanGenie Chat Render ====================
+  // ==================== Step 5: Risk Analysis Render ====================
+  renderRisks() {
+    if (!this.riskCardsContainer) return;
+    if (!Array.isArray(this.state.risks)) this.state.risks = buildSampleRisks(this.state.eventType);
+
+    const metrics = calculateRiskMetrics(this.state.risks);
+    if (this.riskScoreText) this.riskScoreText.textContent = `${metrics.safetyScore}%`;
+    if (this.riskProfileBadge) {
+      this.riskProfileBadge.textContent = metrics.profile;
+      this.riskProfileBadge.className = metrics.safetyScore >= 80 ? 'badge badge-success' : 'badge badge-warning';
+    }
+
+    this.riskCardsContainer.innerHTML = '';
+
+    this.state.risks.forEach(risk => {
+      const card = document.createElement('div');
+      card.className = 'risk-card';
+
+      const probClass = risk.probability === 'High' ? 'text-danger' : risk.probability === 'Medium' ? 'text-warning' : 'text-success';
+      const impactClass = risk.impact === 'Critical' ? 'badge badge-danger' : 'badge badge-warning';
+
+      card.innerHTML = `
+        <div class="risk-card-header">
+          <div class="risk-title-wrap">
+            <span class="risk-cat-tag">${escapeHTML(risk.category)}</span>
+            <span class="risk-title">${escapeHTML(risk.title)}</span>
+          </div>
+          <select class="risk-status-select" aria-label="Status for ${escapeHTML(risk.title)}">
+            <option value="Mitigated" ${risk.status === 'Mitigated' ? 'selected' : ''}>✓ Mitigated</option>
+            <option value="Monitoring" ${risk.status === 'Monitoring' ? 'selected' : ''}>⏳ Monitoring</option>
+            <option value="Action Needed" ${risk.status === 'Action Needed' ? 'selected' : ''}>⚠️ Action Needed</option>
+          </select>
+        </div>
+        <div class="risk-meta-row">
+          <span>Probability: <strong class="${probClass}">${escapeHTML(risk.probability)}</strong></span>
+          <span>Impact: <span class="${impactClass}">${escapeHTML(risk.impact)}</span></span>
+        </div>
+        <div class="risk-strategy-box">
+          <strong>AI Mitigation Protocol:</strong> ${escapeHTML(risk.strategy)}
+        </div>
+        <div class="risk-actions">
+          <button class="btn btn-ghost btn-sm btn-del-risk text-danger" title="Remove risk item">✕ Delete</button>
+        </div>
+      `;
+
+      const statusSelect = card.querySelector('.risk-status-select');
+      statusSelect.addEventListener('change', (e) => {
+        risk.status = e.target.value;
+        this.saveAndRender();
+        this.showToast(`Updated risk protocol to "${risk.status}"`);
+      });
+
+      const delBtn = card.querySelector('.btn-del-risk');
+      delBtn.addEventListener('click', () => {
+        this.state.risks = this.state.risks.filter(r => r.id !== risk.id);
+        this.saveAndRender();
+        this.showToast('Removed risk item.');
+      });
+
+      this.riskCardsContainer.appendChild(card);
+    });
+  }
+
+  // ==================== Step 6: Inventory Render ====================
+  renderInventory() {
+    if (!this.inventoryTableBody) return;
+    if (!Array.isArray(this.state.inventory)) this.state.inventory = buildSampleInventory(this.state.eventType);
+
+    const metrics = calculateInventoryMetrics(this.state.inventory);
+    if (this.inventoryReadinessText) this.inventoryReadinessText.textContent = `${metrics.readinessPct}%`;
+    if (this.inventoryStatusBadge) this.inventoryStatusBadge.textContent = metrics.status;
+
+    this.inventoryTableBody.innerHTML = '';
+
+    const filtered = this.state.inventory.filter(item => {
+      if (this.activeInventoryFilter === 'all') return true;
+      return item.category === this.activeInventoryFilter;
+    });
+
+    if (filtered.length === 0) {
+      this.inventoryTableBody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 1.5rem; color: var(--text-muted);">
+            No supplies matching this category.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    filtered.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.className = 'inv-row';
+
+      const statusBadgeClass = item.status === 'On-Site' ? 'badge badge-success' : item.status === 'In-Transit' ? 'badge badge-warning' : 'badge badge-neutral';
+
+      tr.innerHTML = `
+        <td class="inv-td-name"><strong>${escapeHTML(item.name)}</strong></td>
+        <td><span class="inv-cat-pill">${escapeHTML(item.category)}</span></td>
+        <td class="inv-td-qty">${item.quantity}</td>
+        <td>
+          <select class="inv-status-select" aria-label="Status for ${escapeHTML(item.name)}">
+            <option value="Packed" ${item.status === 'Packed' ? 'selected' : ''}>Packed</option>
+            <option value="Sourced" ${item.status === 'Sourced' ? 'selected' : ''}>Sourced</option>
+            <option value="In-Transit" ${item.status === 'In-Transit' ? 'selected' : ''}>In-Transit</option>
+            <option value="On-Site" ${item.status === 'On-Site' ? 'selected' : ''}>On-Site</option>
+          </select>
+        </td>
+        <td class="inv-td-owner">${escapeHTML(item.owner || 'Planner')}</td>
+        <td class="inv-td-actions">
+          <button class="btn btn-ghost btn-sm btn-del-inv text-danger" title="Delete item">✕</button>
+        </td>
+      `;
+
+      const select = tr.querySelector('.inv-status-select');
+      select.addEventListener('change', (e) => {
+        item.status = e.target.value;
+        this.saveAndRender();
+      });
+
+      const delBtn = tr.querySelector('.btn-del-inv');
+      delBtn.addEventListener('click', () => {
+        this.state.inventory = this.state.inventory.filter(i => i.id !== item.id);
+        this.saveAndRender();
+        this.showToast(`Removed "${item.name}" from inventory.`);
+      });
+
+      this.inventoryTableBody.appendChild(tr);
+    });
+  }
+
+  // ==================== Step 7: PlanGenie Chat Render ====================
   renderChatContext() {
     const arch = ARCHETYPE_DEFAULTS[this.state.eventType] || ARCHETYPE_DEFAULTS.wedding;
     this.contextItemType.textContent = `Event: ${arch.title}`;
@@ -1471,33 +1965,24 @@ class PlanFlowUI {
   }
 
   formatChatMessage(rawText) {
-    // Safe markdown formatting without arbitrary unescaped HTML
     let text = escapeHTML(rawText);
-
-    // Bold formatting
     text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Italic formatting
     text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    // Bullet lists
     text = text.replace(/\n\* (.*?)(?=\n\*|\n\n|$)/g, '<li>$1</li>');
     if (text.includes('<li>')) {
       text = text.replace(/(<li>.*?<\/li>)/gs, '<ul>$1</ul>');
     }
-    // Line breaks
     text = text.replace(/\n/g, '<br>');
-
     return text;
   }
 
   async submitChatMessage(text) {
-    const prompt = sanitizeString(text, 500);
+    const prompt = sanitizeString(text, NUMERIC_BOUNDS.TEXT_MAX_LEN);
     if (!prompt) return;
 
-    // Add user message
     this.state.chatHistory.push({ sender: 'user', text: prompt });
     this.renderChat();
 
-    // Show temporary thinking state
     const thinkingBubble = document.createElement('div');
     thinkingBubble.className = 'chat-bubble chat-bubble-bot';
     thinkingBubble.id = 'temp-thinking';
@@ -1515,7 +2000,9 @@ class PlanFlowUI {
       location: this.state.location,
       vibe: this.state.vibe,
       readinessScore: readiness.score,
-      vendors: this.state.vendors
+      vendors: this.state.vendors,
+      risks: this.state.risks,
+      inventory: this.state.inventory
     };
 
     const reply = await askPlanGenie(
@@ -1525,7 +2012,6 @@ class PlanFlowUI {
       this.state.geminiModel
     );
 
-    // Remove thinking
     const temp = document.getElementById('temp-thinking');
     if (temp) temp.remove();
 
@@ -1538,7 +2024,6 @@ class PlanFlowUI {
   openNegotiationModal(vendor) {
     this.activeNegotiationVendor = vendor;
 
-    // Calculate category target
     const categoryTargetPct = this.state.categoryPercentages[vendor.category] || 20;
     const targetBudget = Math.round((this.state.budget * categoryTargetPct) / 100);
 
@@ -1560,7 +2045,6 @@ class PlanFlowUI {
 
     this.negotiationScriptContent.textContent = `Subject: ${scriptData.subject}\n\n${scriptData.body}`;
 
-    // Mailto generator
     const mailto = `mailto:?subject=${encodeURIComponent(scriptData.subject)}&body=${encodeURIComponent(scriptData.body)}`;
     this.btnEmailMailto.setAttribute('href', mailto);
 
@@ -1587,6 +2071,8 @@ class PlanFlowUI {
       this.state.guests
     );
     const readiness = calculateReadiness(this.state.milestones);
+    const riskMetrics = calculateRiskMetrics(this.state.risks || []);
+    const invMetrics = calculateInventoryMetrics(this.state.inventory || []);
     const arch = ARCHETYPE_DEFAULTS[this.state.eventType] || ARCHETYPE_DEFAULTS.wedding;
 
     let vendorHtml = '';
@@ -1606,18 +2092,26 @@ class PlanFlowUI {
         <h1 style="margin-bottom: 4px;">PlanFlow AI — Executive Event Brief</h1>
         <p style="color: #666; margin-bottom: 20px;">Generated on ${new Date().toLocaleDateString()} | Event: <strong>${arch.title}</strong></p>
         
-        <div style="display: flex; gap: 20px; margin-bottom: 24px;">
-          <div style="flex: 1; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
+        <div style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 140px; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
             <div style="font-size: 12px; color: #666;">Total Budget</div>
-            <div style="font-size: 20px; font-weight: bold;">${formatCurrency(budgetData.totalBudget, this.state.currency)}</div>
+            <div style="font-size: 18px; font-weight: bold;">${formatCurrency(budgetData.totalBudget, this.state.currency)}</div>
           </div>
-          <div style="flex: 1; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
+          <div style="flex: 1; min-width: 140px; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
             <div style="font-size: 12px; color: #666;">Guest Count</div>
-            <div style="font-size: 20px; font-weight: bold;">${this.state.guests} Attendees</div>
+            <div style="font-size: 18px; font-weight: bold;">${this.state.guests} Attendees</div>
           </div>
-          <div style="flex: 1; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
+          <div style="flex: 1; min-width: 140px; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
             <div style="font-size: 12px; color: #666;">Planning Readiness</div>
-            <div style="font-size: 20px; font-weight: bold;">${readiness.score}% Completed</div>
+            <div style="font-size: 18px; font-weight: bold;">${readiness.score}% Completed</div>
+          </div>
+          <div style="flex: 1; min-width: 140px; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
+            <div style="font-size: 12px; color: #666;">Safety Score</div>
+            <div style="font-size: 18px; font-weight: bold;">${riskMetrics.safetyScore}% (${escapeHTML(riskMetrics.profile)})</div>
+          </div>
+          <div style="flex: 1; min-width: 140px; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
+            <div style="font-size: 12px; color: #666;">Inventory On-Site</div>
+            <div style="font-size: 18px; font-weight: bold;">${invMetrics.readinessPct}% Ready</div>
           </div>
         </div>
 
@@ -1689,15 +2183,22 @@ if (typeof module !== 'undefined' && module.exports) {
     escapeHTML,
     sanitizeNumber,
     sanitizeString,
+    debounce,
     CURRENCIES,
     DEFAULT_CATEGORIES,
     ARCHETYPE_DEFAULTS,
+    DEFAULT_RISKS,
+    DEFAULT_INVENTORY,
     calculateBudget,
     formatCurrency,
     buildMilestones,
     calculateReadiness,
     buildSampleVendors,
     generateNegotiationScript,
+    buildSampleRisks,
+    calculateRiskMetrics,
+    buildSampleInventory,
+    calculateInventoryMetrics,
     runHeuristicAI,
     askPlanGenie,
     getDefaultState,

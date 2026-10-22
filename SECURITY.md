@@ -10,11 +10,13 @@ PlanFlow AI operates as a client-side, local-first web application with optional
 
 | Threat Category | Potential Attack Vector | Impact Level | Mitigation Strategy |
 | :--- | :--- | :---: | :--- |
-| **Cross-Site Scripting (XSS)** | Malicious strings injected via task names, vendor notes, prompt inputs, or imported JSON files. | **High** | Strict HTML entity escaping via `escapeHTML()`. Zero direct assignment of unescaped user input to `innerHTML`. |
+| **Cross-Site Scripting (XSS)** | Malicious strings injected via task names, vendor notes, risk descriptions, prompt inputs, or imported JSON files. | **High** | Strict HTML entity escaping via `escapeHTML()` covering `<`, `>`, `"`, `'`, and `/`. Zero direct assignment of unescaped user input to `innerHTML`. |
+| **Content Security Policy (CSP)** | Injection of external unauthorized scripts or iframes. | **High** | Dual-layer CSP enforcement via both `<meta http-equiv="Content-Security-Policy">` and `vercel.json` headers restricting scripts to `'self'` and `'unsafe-inline'`. |
 | **Data Exfiltration** | Unauthorized exposure of user planning budgets, guest lists, or API keys. | **High** | Zero remote tracking or server-side telemetry. All planning data and API keys are stored solely in the user's private browser `LocalStorage`. |
-| **API Key Leakage** | Inadvertent disclosure of Google Gemini API keys in network traces or public repositories. | **Medium** | API key is stored client-side only; never committed to git; sent strictly over HTTPS directly to Google's official Gemini endpoint `generativelanguage.googleapis.com`. |
-| **DOM-based State Poisoning** | Crafted malicious JSON files loaded via the "Import JSON" utility. | **Medium** | Schema verification, safe parsing wrapped in `try/catch`, and strict numeric/text bounds clamping. |
-| **Denial of Service (Client CPU)** | Extreme numeric inputs causing division-by-zero or excessive DOM rendering loops. | **Low** | Strict input boundary clamping (`sanitizeNumber` limits budget to $100M, guests to 50k, text to safe character caps). |
+| **API Key Leakage & Abuse** | Inadvertent disclosure or brute-force misuse of Google Gemini API keys. | **Medium** | API key syntax is strictly validated (`AIza...`), stored client-side only, never committed to git, and sent strictly over encrypted HTTPS to Google's official endpoint. |
+| **Chat Flood & Prompt Injection** | High-frequency automated spam or malformed prompt flooding. | **Medium** | Client-side rate-limiting cooldown (2.5s window) and text length bounding (`CHAT_MAX_LEN: 500`). |
+| **DOM-based State Poisoning** | Crafted malicious JSON files loaded via the "Import JSON" utility. | **Medium** | Schema verification (`v3`), safe parsing wrapped in `try/catch`, and strict numeric/text bounds clamping. |
+| **Denial of Service (Client CPU)** | Extreme numeric inputs causing division-by-zero or excessive DOM rendering loops. | **Low** | Strict input boundary clamping (`sanitizeNumber` limits budget to $100M, guests to 100k, debounce delay of 150ms on sliders). |
 
 ---
 
@@ -47,7 +49,7 @@ PlanFlow AI adheres to a strict "Escape by Default" policy:
 
 ## 3. LocalStorage Boundary & Data Privacy Rules
 
-- **Origin Isolation**: All event state (budgets, vendor lists, chat transcripts) is keyed to `planflow_ai_v2_state` and scoped strictly to the current origin via the browser's Same-Origin Policy (SOP).
+- **Origin Isolation**: All event state (budgets, vendor lists, risks, inventory, chat transcripts) is keyed to `planflow_ai_v2_state` and scoped strictly to the current origin via the browser's Same-Origin Policy (SOP).
 - **Graceful Fault Tolerance**: Storage reads are encapsulated in defensive `try/catch` blocks. If storage contains invalid, tampered, or corrupted data, PlanFlow AI logs a console warning and transparently recovers the clean default state without crashing.
 - **Data Sovereignty**: PlanFlow AI requires no user account, collects no PII (Personally Identifiable Information), and sends no tracking analytics to external endpoints.
 
@@ -56,18 +58,19 @@ PlanFlow AI adheres to a strict "Escape by Default" policy:
 ## 4. Google Gemini API Key Guidelines
 
 When users optionally configure their Google Gemini API key:
+- **Validation**: Enforces standard Google AI API key format (`AIza[0-9A-Za-z-_]{35}`) before attempting network transactions.
 - **Local Storage Only**: The key is kept in `localStorage` and never transmitted to any third-party intermediary, proxy, or server other than Google's official API endpoint (`https://generativelanguage.googleapis.com`).
 - **One-Click Removal**: Users can revoke and delete their stored key anytime via the in-app AI Settings dialog (`⚙️ -> Remove API Key`).
 - **Offline Fallback**: Even without an API key, the built-in offline heuristic AI provides full functionality.
 
 ---
 
-## 5. Content Security Policy (CSP) Recommendation
+## 5. Content Security Policy (CSP) Specifications
 
-For production server deployments (e.g., Nginx, Netlify, Vercel, Cloudflare Pages), the following CSP header is recommended:
+Enforced across both `index.html` and `vercel.json`:
 
 ```http
-Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com; img-src 'self' data:; object-src 'none'; base-uri 'self';
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com; img-src 'self' data: https:; object-src 'none'; base-uri 'self';
 ```
 
 ---
