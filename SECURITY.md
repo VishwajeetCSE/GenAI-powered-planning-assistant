@@ -59,9 +59,9 @@ PlanFlow AI adheres to a strict "Escape by Default" policy:
 
 When users optionally configure their Google Gemini API key:
 - **Validation**: Enforces standard Google AI API key format (`AIza[0-9A-Za-z-_]{35}`) before attempting network transactions.
-- **Local Storage Only**: The key is kept in `localStorage` and never transmitted to any third-party intermediary, proxy, or server other than Google's official API endpoint (`https://generativelanguage.googleapis.com`).
-- **One-Click Removal**: Users can revoke and delete their stored key anytime via the in-app AI Settings dialog (`⚙️ -> Remove API Key`).
-- **Offline Fallback**: Even without an API key, the built-in offline heuristic AI provides full functionality.
+- **Session-Only Storage**: The key is stored strictly in memory and `sessionStorage` during the active browser session. It is **NEVER** persisted to `localStorage` and **NEVER** serialized into exported JSON event plans.
+- **Immediate Clearing**: Users can revoke and delete their session key anytime via the in-app AI Settings dialog (`⚙️ -> Remove API Key`). Closing the browser tab automatically flushes the key from memory.
+- **Offline Fallback**: Even without an API key, the built-in offline heuristic AI provides full functionality with zero dependencies.
 
 ---
 

@@ -25,7 +25,8 @@ node test.js
 | **Suite 7: Risk Analysis & Mitigation Matrix** | Archetype threat generation, weighted safety score calculations, status transitions (Action Needed -> Monitoring -> Mitigated) | 5 | ✅ PASS (100%) |
 | **Suite 8: Supplies & Equipment Inventory** | Domain asset roster generation, deployment readiness percentage, zero-inventory handling, On-Site status tracking | 5 | ✅ PASS (100%) |
 | **Suite 9: Debounce & Performance Guards** | High-frequency input debounce execution, argument preservation, deferred timer safety | 2 | ✅ PASS (100%) |
-| **Total** | **End-to-End System Logic** | **40** | **✅ 100% PASS** |
+| **Suite 10: Exploit Regression Gate** | JSON import schema validation, numeric coercion of inventory quantity against DOM-XSS, sensitive API key stripping | 3 | ✅ PASS (100%) |
+| **Total** | **End-to-End System Logic** | **43** | **✅ 100% PASS** |
 
 ---
 

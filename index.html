@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com; img-src 'self' data:; object-src 'none';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com; img-src 'self' data: https:; object-src 'none'; base-uri 'self';">
   <meta name="description" content="PlanFlow AI — Production-Grade GenAI-Powered Planning Assistant with Dynamic Budgeting, Risk Analysis, and Inventory Management.">
   <meta name="theme-color" content="#4f46e5">
   <title>PlanFlow AI — GenAI-Powered Event Planning Assistant</title>
@@ -73,7 +73,7 @@
             <button class="dropdown-item" id="btn-import-json-trigger" role="menuitem">Import JSON Data</button>
             <button class="dropdown-item" id="btn-print-summary" role="menuitem">Print / PDF Summary</button>
           </div>
-          <input type="file" id="import-json-file" accept=".json" style="display: none;" aria-hidden="true">
+          <input type="file" id="import-json-file" accept=".json" style="display: none;" aria-hidden="true" aria-label="Import JSON event plan file">
         </div>
 
         <!-- Theme Toggle -->
@@ -364,13 +364,13 @@
       </div>
 
       <!-- Category Filter Pills -->
-      <div class="category-filter-bar" role="tablist" aria-label="Filter vendors by category">
-        <button class="filter-chip active" data-filter="all" role="tab" aria-selected="true">All Vendors</button>
-        <button class="filter-chip" data-filter="Venue" role="tab" aria-selected="false">Venue</button>
-        <button class="filter-chip" data-filter="Catering" role="tab" aria-selected="false">Catering</button>
-        <button class="filter-chip" data-filter="Decor & Entertainment" role="tab" aria-selected="false">Decor &amp; Entertainment</button>
-        <button class="filter-chip" data-filter="Photography & Media" role="tab" aria-selected="false">Photography</button>
-        <button class="filter-chip" data-filter="Contingency & Permits" role="tab" aria-selected="false">Permits &amp; Logistics</button>
+      <div class="category-filter-bar" id="vendor-tablist" role="tablist" aria-label="Filter vendors by category">
+        <button id="vtab-all" class="filter-chip active" data-filter="all" role="tab" aria-selected="true" aria-controls="vendor-cards-container" tabindex="0">All Vendors</button>
+        <button id="vtab-Venue" class="filter-chip" data-filter="Venue" role="tab" aria-selected="false" aria-controls="vendor-cards-container" tabindex="-1">Venue</button>
+        <button id="vtab-Catering" class="filter-chip" data-filter="Catering" role="tab" aria-selected="false" aria-controls="vendor-cards-container" tabindex="-1">Catering</button>
+        <button id="vtab-Decor" class="filter-chip" data-filter="Decor & Entertainment" role="tab" aria-selected="false" aria-controls="vendor-cards-container" tabindex="-1">Decor &amp; Entertainment</button>
+        <button id="vtab-Photography" class="filter-chip" data-filter="Photography & Media" role="tab" aria-selected="false" aria-controls="vendor-cards-container" tabindex="-1">Photography</button>
+        <button id="vtab-Permits" class="filter-chip" data-filter="Contingency & Permits" role="tab" aria-selected="false" aria-controls="vendor-cards-container" tabindex="-1">Permits &amp; Logistics</button>
       </div>
 
       <!-- Add Vendor Form (Collapsible) -->
@@ -411,7 +411,7 @@
       </form>
 
       <!-- Vendor Cards Grid -->
-      <div class="vendor-cards-grid" id="vendor-cards-container">
+      <div class="vendor-cards-grid" id="vendor-cards-container" role="tabpanel" aria-labelledby="vtab-all" tabindex="0">
         <!-- Rendered via JS -->
       </div>
     </section>
@@ -506,13 +506,13 @@
       </div>
 
       <!-- Inventory Category Filters -->
-      <div class="category-filter-bar" role="tablist" aria-label="Filter inventory by category">
-        <button class="filter-chip inv-filter-chip active" data-filter="all" role="tab" aria-selected="true">All Items</button>
-        <button class="filter-chip inv-filter-chip" data-filter="AV & Tech" role="tab" aria-selected="false">AV &amp; Tech</button>
-        <button class="filter-chip inv-filter-chip" data-filter="Decor" role="tab" aria-selected="false">Decor</button>
-        <button class="filter-chip inv-filter-chip" data-filter="Signage" role="tab" aria-selected="false">Signage</button>
-        <button class="filter-chip inv-filter-chip" data-filter="Dining" role="tab" aria-selected="false">Dining</button>
-        <button class="filter-chip inv-filter-chip" data-filter="Safety" role="tab" aria-selected="false">Safety &amp; Emergency</button>
+      <div class="category-filter-bar" id="inv-tablist" role="tablist" aria-label="Filter inventory by category">
+        <button id="itab-all" class="filter-chip inv-filter-chip active" data-filter="all" role="tab" aria-selected="true" aria-controls="inv-table-wrapper" tabindex="0">All Items</button>
+        <button id="itab-av" class="filter-chip inv-filter-chip" data-filter="Audio/Visual" role="tab" aria-selected="false" aria-controls="inv-table-wrapper" tabindex="-1">Audio/Visual</button>
+        <button id="itab-decor" class="filter-chip inv-filter-chip" data-filter="Decor" role="tab" aria-selected="false" aria-controls="inv-table-wrapper" tabindex="-1">Decor</button>
+        <button id="itab-power" class="filter-chip inv-filter-chip" data-filter="Power" role="tab" aria-selected="false" aria-controls="inv-table-wrapper" tabindex="-1">Power</button>
+        <button id="itab-safety" class="filter-chip inv-filter-chip" data-filter="Safety" role="tab" aria-selected="false" aria-controls="inv-table-wrapper" tabindex="-1">Safety</button>
+        <button id="itab-logistics" class="filter-chip inv-filter-chip" data-filter="Logistics" role="tab" aria-selected="false" aria-controls="inv-table-wrapper" tabindex="-1">Logistics</button>
       </div>
 
       <!-- Add Inventory Form (Collapsible) -->
@@ -525,13 +525,11 @@
           <div class="form-group">
             <label for="inv-cat-select">Category</label>
             <select id="inv-cat-select">
-              <option value="AV & Tech">AV &amp; Tech</option>
+              <option value="Audio/Visual">Audio/Visual</option>
               <option value="Decor">Decor</option>
-              <option value="Signage">Signage</option>
-              <option value="Dining">Dining</option>
-              <option value="Stationery">Stationery</option>
-              <option value="Safety">Safety &amp; Emergency</option>
-              <option value="Emergency">Emergency Kit</option>
+              <option value="Power">Power</option>
+              <option value="Safety">Safety</option>
+              <option value="Logistics">Logistics</option>
             </select>
           </div>
           <div class="form-group">
@@ -559,7 +557,7 @@
       </form>
 
       <!-- Inventory Table -->
-      <div class="inv-table-responsive">
+      <div class="inv-table-responsive" id="inv-table-wrapper" role="tabpanel" aria-labelledby="itab-all" tabindex="0">
         <table class="inv-table" aria-label="Supplies and Equipment Inventory">
           <thead>
             <tr>
@@ -681,7 +679,7 @@
         </div>
 
         <div class="script-tactics-box">
-          <h4>💡 Negotiation Strategy Tips:</h4>
+          <h3 class="tactics-heading">💡 Negotiation Strategy Tips:</h3>
           <ul id="negotiation-tips-list">
             <li>Highlight guaranteed upfront deposit or off-peak date flexibility.</li>
             <li>Inquire about bundled services or omitting optional add-ons to meet target budget.</li>
@@ -774,7 +772,7 @@
     </div>
   </footer>
 
-  <!-- Application Logic -->
-  <script src="app.js"></script>
+  <!-- Application Logic (Native ES Module) -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>

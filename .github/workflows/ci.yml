@@ -1,0 +1,40 @@
+name: CI / Automated Quality & Security Gate
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-verify:
+    name: Node ${{ matrix.node-version }} Quality & Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Verify JavaScript Syntax & Static Lint
+        run: npm run lint
+
+      - name: Run Self-Contained Automated Unit & Integration Tests
+        run: npm test
+
+      - name: Validate Repository Footprint (< 10 MB Compliance)
+        run: |
+          REPO_SIZE_KB=$(du -sk . | cut -f1)
+          echo "Current Repository Size: ${REPO_SIZE_KB} KB"
+          if [ $REPO_SIZE_KB -gt 10240 ]; then
+            echo "ERROR: Repository exceeds 10 MB ceiling ($REPO_SIZE_KB KB)"
+            exit 1
+          fi
+          echo "PASS: Repository footprint is strictly under 10 MB limit."

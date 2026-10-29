@@ -3,7 +3,7 @@
 <div align="center">
 
 ![PlanFlow AI Logo Banner](https://img.shields.io/badge/PlanFlow%20AI-v2.5%20Enterprise-6366f1?style=for-the-badge&logo=sparkles&logoColor=white)
-![Build Status](https://img.shields.io/badge/Build-Passing%20(40%2F40%20Tests)-10b981?style=for-the-badge&logo=githubactions&logoColor=white)
+![Build Status](https://img.shields.io/badge/Build-Passing%20(43%2F43%20Tests)-10b981?style=for-the-badge&logo=githubactions&logoColor=white)
 ![Vercel Ready](https://img.shields.io/badge/Vercel-Deployment%20Ready-black?style=for-the-badge&logo=vercel&logoColor=white)
 ![Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Pure%20Vanilla%20JS)-06b6d4?style=for-the-badge)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA%20Compliant-success?style=for-the-badge&logo=w3c&logoColor=white)
@@ -211,27 +211,31 @@ PlanFlow AI utilizes a hybrid two-tier AI architecture:
 
 ## 🧪 Automated Testing Assets
 
-PlanFlow AI includes a self-contained Node.js unit and integration test runner with **40 automated test assertions**:
+PlanFlow AI includes a self-contained Node.js unit and integration test runner with **43 automated test assertions across 10 test suites**:
 
 ```bash
 # Run all automated tests
-node test.js
+npm test
+
+# Run deterministic static code quality and security lint
+npm run lint
 ```
 
 ### Test Suite Output
 ```
-▶ Test Suite: Suite 1: Security & XSS Sanitization Engine (5/5 PASS)
+▶ Test Suite: Suite 1: Security, XSS Sanitization & DOM Injection Defense (5/5 PASS)
 ▶ Test Suite: Suite 2: Context-Aware Dynamic Budget Calculator Engine (5/5 PASS)
 ▶ Test Suite: Suite 3: Milestone Roadmap & Readiness Score Engine (5/5 PASS)
 ▶ Test Suite: Suite 4: Vendor Checklist & Negotiation Assistant Engine (3/3 PASS)
 ▶ Test Suite: Suite 5: PlanGenie Contextual AI Engine & Knowledge Graph (7/7 PASS)
-▶ Test Suite: Suite 6: Local Persistence Mock & State Integrity (3/3 PASS)
+▶ Test Suite: Suite 6: Local Persistence, State Integrity & Schema Validation (3/3 PASS)
 ▶ Test Suite: Suite 7: Event Risk Analysis & Mitigation Matrix Engine (5/5 PASS)
 ▶ Test Suite: Suite 8: Supplies & Equipment Inventory Engine (5/5 PASS)
 ▶ Test Suite: Suite 9: Debounce Utility & Performance Optimization (2/2 PASS)
+▶ Test Suite: Suite 10: Exploit Regression & Import Schema Sanitization Gate (3/3 PASS)
 
-Total Assertions: 40 | Passed: 40 | Failed: 0 | Execution Time: < 250ms
-✨ 100% TESTS PASSED! All 9 suites verified successfully.
+Total Assertions: 43 | Passed: 43 | Failed: 0 | Execution Time: < 250ms
+✨ 100% TESTS PASSED! All 10 suites verified successfully.
 ```
 *Detailed QA edge-case matrices and manual verification scripts are available in [`TESTING.md`](./TESTING.md).*
 

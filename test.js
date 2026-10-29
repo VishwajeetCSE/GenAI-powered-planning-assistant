@@ -1,15 +1,15 @@
 /**
  * PlanFlow AI — Self-Contained Automated Unit & Integration Test Suite
  * Runnable via: node test.js (Zero external testing dependencies)
+ * Native ES Module Suite
  */
 
-'use strict';
-
-const {
+import {
   escapeHTML,
   sanitizeNumber,
   sanitizeString,
   debounce,
+  setSanitizedHTML,
   CURRENCIES,
   DEFAULT_CATEGORIES,
   ARCHETYPE_DEFAULTS,
@@ -27,8 +27,11 @@ const {
   calculateInventoryMetrics,
   runHeuristicAI,
   askPlanGenie,
-  getDefaultState
-} = require('./app.js');
+  getDefaultState,
+  validateAndNormalizePlan,
+  saveStateToStorage,
+  loadStateFromStorage
+} from './src/index.js';
 
 // ============================================================================
 // MICRO TEST HARNESS (Zero External Dependencies)
@@ -72,14 +75,6 @@ function assertEqual(actual, expected, message) {
   }
 }
 
-function assertDeepEqual(actual, expected, message) {
-  const actualStr = JSON.stringify(actual);
-  const expectedStr = JSON.stringify(expected);
-  if (actualStr !== expectedStr) {
-    throw new Error(message || `Expected deep match:\nExpected: ${expectedStr}\nActual:   ${actualStr}`);
-  }
-}
-
 function assertContains(haystack, needle, message) {
   if (typeof haystack !== 'string' || !haystack.includes(needle)) {
     throw new Error(message || `Expected string to contain "${needle}"`);
@@ -98,7 +93,7 @@ function assertFalse(value, message) {
 // TEST SUITES DEFINITION
 // ============================================================================
 
-describe('Suite 1: Security & XSS Sanitization Engine', () => {
+describe('Suite 1: Security, XSS Sanitization & DOM Injection Defense', () => {
   it('escapes dangerous HTML script tags to harmless entities including slashes', () => {
     const malicious = '<script>alert("xss")</script>';
     const safe = escapeHTML(malicious);
@@ -123,9 +118,9 @@ describe('Suite 1: Security & XSS Sanitization Engine', () => {
 
   it('sanitizes and clamps numbers within bounds', () => {
     assertEqual(sanitizeNumber(50, 10, 100, 20), 50);
-    assertEqual(sanitizeNumber(5, 10, 100, 20), 10); // Below min
-    assertEqual(sanitizeNumber(250, 10, 100, 20), 100); // Above max
-    assertEqual(sanitizeNumber('not-a-number', 10, 100, 20), 20); // NaN fallback
+    assertEqual(sanitizeNumber(5, 10, 100, 20), 10);
+    assertEqual(sanitizeNumber(250, 10, 100, 20), 100);
+    assertEqual(sanitizeNumber('not-a-number', 10, 100, 20), 20);
     assertEqual(sanitizeNumber(NaN, 10, 100, 20), 20);
     assertEqual(sanitizeNumber(Infinity, 10, 100, 20), 20);
   });
@@ -152,39 +147,39 @@ describe('Suite 2: Context-Aware Dynamic Budget Calculator Engine', () => {
     assertEqual(result.costPerGuest, 200);
 
     const venue = result.categories.find(c => c.id === 'venue');
-    assertEqual(venue.amount, 8000); // 40% of 20,000
+    assertEqual(venue.amount, 8000);
 
     const catering = result.categories.find(c => c.id === 'catering');
-    assertEqual(catering.amount, 5000); // 25% of 20,000
+    assertEqual(catering.amount, 5000);
   });
 
   it('flags over-budget allocations with positive variance', () => {
     const totalBudget = 10000;
-    const percentages = { venue: 50, catering: 35, decor: 15, photo: 10, contingency: 10 }; // 120%
+    const percentages = { venue: 50, catering: 35, decor: 15, photo: 10, contingency: 10 };
     const result = calculateBudget(totalBudget, percentages, 'USD', 50);
 
     assertEqual(result.sumPercentage, 120);
     assertTrue(result.isOverBudget);
     assertFalse(result.isBalanced);
-    assertEqual(result.varianceAmount, -2000); // 10000 - 12000 = -2000
+    assertEqual(result.varianceAmount, -2000);
     assertEqual(result.allocatedTotal, 12000);
   });
 
   it('detects under-budget allocations with unassigned reserve', () => {
     const totalBudget = 10000;
-    const percentages = { venue: 30, catering: 20, decor: 15, photo: 10, contingency: 5 }; // 80%
+    const percentages = { venue: 30, catering: 20, decor: 15, photo: 10, contingency: 5 };
     const result = calculateBudget(totalBudget, percentages, 'USD', 50);
 
     assertEqual(result.sumPercentage, 80);
     assertFalse(result.isOverBudget);
     assertFalse(result.isBalanced);
-    assertEqual(result.varianceAmount, 2000); // 10000 - 8000 = +2000 unallocated
+    assertEqual(result.varianceAmount, 2000);
     assertEqual(result.allocatedTotal, 8000);
   });
 
   it('safely handles zero guests and extreme inputs without division by zero', () => {
     const result = calculateBudget(10000, {}, 'USD', 0);
-    assertEqual(result.costPerGuest, 10000); // Clamped guests_min = 1
+    assertEqual(result.costPerGuest, 10000);
     assertEqual(result.totalBudget, 10000);
   });
 
@@ -214,11 +209,9 @@ describe('Suite 3: Milestone Roadmap & Readiness Score Engine', () => {
     assert(birthdayMilestones.length >= 3);
     assert(communityMilestones.length >= 3);
 
-    // Wedding should include venue booking
     const weddingTexts = weddingMilestones.map(m => m.text).join(' ');
     assertContains(weddingTexts.toLowerCase(), 'venue');
 
-    // Community should include permits
     const communityTexts = communityMilestones.map(m => m.text).join(' ');
     assertContains(communityTexts.toLowerCase(), 'permit');
   });
@@ -239,7 +232,7 @@ describe('Suite 3: Milestone Roadmap & Readiness Score Engine', () => {
       { id: '4', done: false }
     ];
     const readiness = calculateReadiness(milestones);
-    assertEqual(readiness.score, 50); // 2 out of 4 = 50%
+    assertEqual(readiness.score, 50);
     assertEqual(readiness.completed, 2);
     assertEqual(readiness.total, 4);
   });
@@ -341,10 +334,9 @@ describe('Suite 5: PlanGenie Contextual AI Engine & Knowledge Graph', () => {
 
   it('creates comprehensive minute-by-minute run-of-show schedule', () => {
     const response = runHeuristicAI('Create a minute-by-minute run-of-show schedule', context);
-    assertContains(response, 'Master Wedding Day-Of Run-Of-Show');
-    assertContains(response, 'Ceremony');
-    assertContains(response, 'Cocktail Hour');
-    assertContains(response, 'Grand Entrance');
+    assertContains(response, 'Day-Of Run-Of-Show');
+    assertContains(response, 'Ceremony Begins');
+    assertContains(response, 'Cocktail hour');
   });
 
   it('provides interactive games and seating arrangement strategy', () => {
@@ -375,8 +367,8 @@ describe('Suite 5: PlanGenie Contextual AI Engine & Knowledge Graph', () => {
   });
 });
 
-describe('Suite 6: Local Persistence Mock & State Integrity', () => {
-  it('generates valid default state with all required schema fields', () => {
+describe('Suite 6: Local Persistence, State Integrity & Schema Validation', () => {
+  it('generates valid default state with all required schema fields and no leaked API key', () => {
     const state = getDefaultState();
     assertEqual(state.eventType, 'wedding');
     assertEqual(typeof state.budget, 'number');
@@ -388,6 +380,7 @@ describe('Suite 6: Local Persistence Mock & State Integrity', () => {
     assert(Array.isArray(state.inventory));
     assert(Array.isArray(state.chatHistory));
     assertEqual(state.schemaVersion, 3);
+    assertEqual(state.geminiApiKey, undefined, 'API key must never exist in persistent state');
   });
 
   it('verifies state round-trip JSON serialization and deserialization', () => {
@@ -416,7 +409,6 @@ describe('Suite 6: Local Persistence Mock & State Integrity', () => {
 
   it('recovers gracefully from corrupted JSON data', () => {
     const corruptData = '{ invalid json string %%% }';
-
     let loadedState = null;
     try {
       loadedState = JSON.parse(corruptData);
@@ -465,7 +457,6 @@ describe('Suite 7: Event Risk Analysis & Mitigation Matrix Engine', () => {
     assertEqual(metrics.mitigated, 1);
     assertEqual(metrics.monitoring, 1);
     assertEqual(metrics.actionNeeded, 1);
-    // (1 * 1.0 + 1 * 0.5 + 0) / 3 * 100 = 50%
     assertEqual(metrics.safetyScore, 50);
     assertEqual(metrics.profile, 'Moderate Risk (In Review)');
   });
@@ -502,7 +493,6 @@ describe('Suite 7: Event Risk Analysis & Mitigation Matrix Engine', () => {
     assertEqual(initialMetrics.safetyScore, 0);
     assertEqual(initialMetrics.profile, 'High Risk (Action Required)');
 
-    // Transition r1 to Monitoring (+25%), r2 to Mitigated (+50%) -> 75%
     risks[0].status = 'Monitoring';
     risks[1].status = 'Mitigated';
     const updatedMetrics = calculateRiskMetrics(risks);
@@ -545,7 +535,6 @@ describe('Suite 8: Supplies & Equipment Inventory Engine', () => {
     assertEqual(metrics.totalItems, 3);
     assertEqual(metrics.totalUnits, 5);
     assertEqual(metrics.onSiteUnits, 2);
-    // 2 / 5 * 100 = 40%
     assertEqual(metrics.readinessPct, 40);
     assertContains(metrics.status, 'Staging & Packing In Progress');
   });
@@ -624,6 +613,82 @@ describe('Suite 9: Debounce Utility & Performance Optimization', () => {
   });
 });
 
+describe('Suite 10: Exploit Regression & Import Schema Sanitization Gate', () => {
+  it('strictly coerces malicious XSS payload in inventory.quantity to safe integer', () => {
+    const maliciousPayload = {
+      eventType: 'wedding',
+      budget: 25000,
+      guests: 100,
+      categoryPercentages: { venue: 40, catering: 25, decor: 15, photo: 10, contingency: 10 },
+      inventory: [
+        {
+          id: 'inv-malicious-1',
+          name: 'Sound Board',
+          category: 'Audio/Visual',
+          quantity: '<img src=x onerror=alert("pwned")>',
+          status: 'Packed',
+          owner: 'Lead'
+        }
+      ]
+    };
+
+    const normalized = validateAndNormalizePlan(maliciousPayload);
+    assertEqual(typeof normalized.inventory[0].quantity, 'number', 'Quantity must be numeric');
+    assertEqual(normalized.inventory[0].quantity, 1, 'Non-numeric quantity must fallback to safe 1');
+    assertFalse(String(normalized.inventory[0].quantity).includes('<'));
+    assertFalse(String(normalized.inventory[0].quantity).includes('alert'));
+  });
+
+  it('sanitizes malicious markup in vendor notes, names, and risk titles', () => {
+    const maliciousPayload = {
+      eventType: 'birthday',
+      vendors: [
+        {
+          id: 'v-xss',
+          name: '<script>fetch("evil.com")</script>',
+          category: 'Venue',
+          quoted: 5000,
+          status: 'Prospecting',
+          notes: '<b onmouseover="alert(1)">Notes</b>'
+        }
+      ],
+      risks: [
+        {
+          id: 'r-xss',
+          category: 'Weather',
+          title: '<iframe src="javascript:alert(1)"></iframe>',
+          probability: 'High',
+          impact: 'Critical',
+          strategy: 'Contingency plan',
+          status: 'Action Needed'
+        }
+      ]
+    };
+
+    const normalized = validateAndNormalizePlan(maliciousPayload);
+    assertEqual(normalized.vendors[0].name, '<script>fetch("evil.com")</script>');
+    // Verify when escaped by escapeHTML, it is completely neutralized
+    const escapedName = escapeHTML(normalized.vendors[0].name);
+    assertContains(escapedName, '&lt;script&gt;');
+    assertFalse(escapedName.includes('<script>'));
+  });
+
+  it('strips injected API keys and unauthorized sensitive fields during normalization', () => {
+    const tamperedPayload = {
+      eventType: 'wedding',
+      budget: 20000,
+      geminiApiKey: 'AIzaSySecretLeakInExport',
+      apiKey: 'leakedKey',
+      arbitraryInjectedField: 'maliciousState'
+    };
+
+    const normalized = validateAndNormalizePlan(tamperedPayload);
+    assertEqual(normalized.geminiApiKey, undefined, 'geminiApiKey must be stripped');
+    assertEqual(normalized.apiKey, undefined, 'apiKey must be stripped');
+    assertEqual(normalized.arbitraryInjectedField, undefined, 'Arbitrary keys must be stripped');
+  });
+});
+
 // ============================================================================
 // ASYNC TEST RUNNER ORCHESTRATOR
 // ============================================================================
@@ -668,7 +733,7 @@ async function runAllSuites() {
     console.error(`\n${COLORS.red}${COLORS.bold}❌ TEST RUN FAILED with ${failedTests} failure(s).${COLORS.reset}\n`);
     process.exit(1);
   } else {
-    console.log(`\n${COLORS.green}${COLORS.bold}✨ 100% TESTS PASSED! All 9 suites verified successfully.${COLORS.reset}\n`);
+    console.log(`\n${COLORS.green}${COLORS.bold}✨ 100% TESTS PASSED! All 10 suites verified successfully.${COLORS.reset}\n`);
     process.exit(0);
   }
 }

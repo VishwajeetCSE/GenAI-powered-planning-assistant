@@ -2,10 +2,11 @@
   "name": "planflow-ai",
   "version": "2.5.0",
   "description": "PlanFlow AI — Production-Grade GenAI-Powered Multi-Event Planning Assistant",
-  "private": true,
+  "type": "module",
   "main": "app.js",
   "scripts": {
     "test": "node test.js",
+    "lint": "node scripts/lint.js",
     "start": "npx serve ."
   },
   "keywords": [
