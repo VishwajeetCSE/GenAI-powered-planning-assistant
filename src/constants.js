@@ -14,8 +14,18 @@ export const NUMERIC_BOUNDS = Object.freeze({
   GUESTS_DEFAULT: 100,
   TEXT_MAX_LEN: 600,
   CHAT_MAX_LEN: 500,
+  AI_RESPONSE_MAX_LEN: 6000,
+  GEMINI_REQUEST_TIMEOUT_MS: 10000,
   DEBOUNCE_DELAY_MS: 150
 });
+
+// Only models offered by the settings UI can be sent to the external endpoint.
+// This prevents a tampered session value from changing the requested API path.
+export const GEMINI_MODELS = Object.freeze([
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-2.0-flash-exp'
+]);
 
 export const CURRENCIES = Object.freeze({
   USD: Object.freeze({ symbol: '$', code: 'USD', locale: 'en-US' }),

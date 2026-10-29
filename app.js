@@ -30,6 +30,8 @@ import {
   calculateInventoryMetrics,
   runHeuristicAI,
   askPlanGenie,
+  isValidGeminiApiKey,
+  isSupportedGeminiModel,
   STORAGE_KEY,
   SCHEMA_VERSION,
   getDefaultState,
@@ -54,7 +56,8 @@ export class PlanFlowUI {
     this.sessionGeminiModel = 'gemini-1.5-flash';
     if (typeof window !== 'undefined' && window.sessionStorage) {
       this.sessionApiKey = window.sessionStorage.getItem('planflow_session_gemini_key') || '';
-      this.sessionGeminiModel = window.sessionStorage.getItem('planflow_session_gemini_model') || this.sessionGeminiModel;
+      const storedModel = window.sessionStorage.getItem('planflow_session_gemini_model');
+      this.sessionGeminiModel = isSupportedGeminiModel(storedModel) ? storedModel : this.sessionGeminiModel;
     }
 
     this.activeVendorFilter = 'all';
@@ -382,8 +385,15 @@ export class PlanFlowUI {
     const saveSettings = (e) => {
       e.preventDefault();
       const key = this.geminiApiKeyInput?.value.trim() || '';
+      const selectedModel = this.geminiModelSelect?.value || 'gemini-1.5-flash';
+      if (key && !isValidGeminiApiKey(key)) {
+        this.geminiApiKeyInput?.setAttribute('aria-invalid', 'true');
+        this.showToast('Enter a valid Google Gemini API key or leave the field blank for offline mode.');
+        return;
+      }
       this.sessionApiKey = key;
-      this.sessionGeminiModel = this.geminiModelSelect?.value || 'gemini-1.5-flash';
+      this.sessionGeminiModel = isSupportedGeminiModel(selectedModel) ? selectedModel : 'gemini-1.5-flash';
+      this.geminiApiKeyInput?.setAttribute('aria-invalid', 'false');
       if (typeof window !== 'undefined' && window.sessionStorage) {
         window.sessionStorage.setItem('planflow_session_gemini_key', key);
         window.sessionStorage.setItem('planflow_session_gemini_model', this.sessionGeminiModel);
@@ -400,6 +410,7 @@ export class PlanFlowUI {
     this.btnClearApiKey?.addEventListener('click', () => {
       this.sessionApiKey = '';
       if (this.geminiApiKeyInput) this.geminiApiKeyInput.value = '';
+      this.geminiApiKeyInput?.setAttribute('aria-invalid', 'false');
       if (typeof window !== 'undefined' && window.sessionStorage) {
         window.sessionStorage.removeItem('planflow_session_gemini_key');
       }
@@ -1122,7 +1133,7 @@ export class PlanFlowUI {
 
   updateSettingsStatus() {
     if (!this.settingsEngineStatus) return;
-    if (this.sessionApiKey && this.sessionApiKey.startsWith('AIza')) {
+    if (isValidGeminiApiKey(this.sessionApiKey)) {
       this.settingsEngineStatus.textContent = 'Active: Google Gemini Live API (Session Only)';
       this.settingsEngineStatus.className = 'text-success';
     } else {

@@ -3,7 +3,7 @@
 <div align="center">
 
 ![PlanFlow AI Logo Banner](https://img.shields.io/badge/PlanFlow%20AI-v2.5%20Enterprise-6366f1?style=for-the-badge&logo=sparkles&logoColor=white)
-![Build Status](https://img.shields.io/badge/Build-Passing%20(43%2F43%20Tests)-10b981?style=for-the-badge&logo=githubactions&logoColor=white)
+![Build Status](https://img.shields.io/badge/Build-Passing%20(46%2F46%20Tests)-10b981?style=for-the-badge&logo=githubactions&logoColor=white)
 ![Vercel Ready](https://img.shields.io/badge/Vercel-Deployment%20Ready-black?style=for-the-badge&logo=vercel&logoColor=white)
 ![Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Pure%20Vanilla%20JS)-06b6d4?style=for-the-badge)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA%20Compliant-success?style=for-the-badge&logo=w3c&logoColor=white)
@@ -202,7 +202,7 @@ PlanFlow AI utilizes a hybrid two-tier AI architecture:
 
 - **Strict XSS Prevention**: Custom `escapeHTML()` sanitization applied to all dynamic content before DOM injection (including angle brackets, quotes, and slashes).
 - **Content Security Policy (CSP)**: Built-in strict CSP `<meta>` tag and `vercel.json` HTTP headers restricting script origins and object rendering.
-- **API Key Format Validation**: Enforces Google Gemini key syntax rules (`AIza...`) before sending network calls.
+- **API Request Guardrails**: Validates the Google Gemini key shape, allowlists the models exposed in the UI, caps live responses, and aborts stalled requests after 10 seconds before falling back locally.
 - **Bounded Input Validation**: Prevents negative values, division-by-zero, and oversized string inputs.
 - **Client-Side Data Privacy**: Zero telemetry, zero analytics trackers, and zero server-side storage of user plans or API keys.
 - *Detailed security documentation is available in [`SECURITY.md`](./SECURITY.md).*
@@ -211,7 +211,7 @@ PlanFlow AI utilizes a hybrid two-tier AI architecture:
 
 ## 🧪 Automated Testing Assets
 
-PlanFlow AI includes a self-contained Node.js unit and integration test runner with **44 automated test assertions across 10 test suites**:
+PlanFlow AI includes a self-contained Node.js unit and integration test runner with **46 automated test assertions across 10 test suites**:
 
 ```bash
 # Run all automated tests
@@ -234,7 +234,7 @@ npm run lint
 ▶ Test Suite: Suite 9: Debounce Utility & Performance Optimization (2/2 PASS)
 ▶ Test Suite: Suite 10: Exploit Regression & Import Schema Sanitization Gate (4/4 PASS)
 
-Total Assertions: 44 | Passed: 44 | Failed: 0 | Execution Time: < 1 second
+Total Assertions: 46 | Passed: 46 | Failed: 0 | Execution Time: < 1 second
 ✨ 100% TESTS PASSED! All 10 suites verified successfully.
 ```
 *Detailed QA edge-case matrices and manual verification scripts are available in [`TESTING.md`](./TESTING.md).*
@@ -283,7 +283,7 @@ Because PlanFlow AI has **zero build dependencies**, you can run it immediately 
 ├── package.json     # Project metadata and test scripts
 ├── src/             # Native ES modules for state, security, budgeting, AI, and domain engines
 ├── scripts/lint.js  # Zero-dependency syntax, security, and UI-contract gate
-├── test.js          # Self-contained Node.js automated test runner (44/44 tests pass)
+├── test.js          # Self-contained Node.js automated test runner (46/46 tests pass)
 ├── TESTING.md       # Edge-case matrix, browser matrix & manual QA protocol
 ├── SECURITY.md      # Threat model, XSS defense strategy, CSP & privacy rules
 └── README.md        # Comprehensive project presentation & documentation
@@ -306,7 +306,7 @@ Because PlanFlow AI has **zero build dependencies**, you can run it immediately 
 | **Inventory & Supplies Tracker**| Equipment logistics, quantity status, and On-Site deployment %. | ✅ Compliant |
 | **PlanGenie AI Coach** | Contextual brainstormer with 5 preset prompts + optional Gemini API. | ✅ Compliant |
 | **Local Persistence & Export** | LocalStorage auto-save, JSON import/export, and print-ready summary. | ✅ Compliant |
-| **Automated Tests (`test.js`)** | 44 automated assertions across 10 suites with 100% success rate. | ✅ Compliant |
+| **Automated Tests (`test.js`)** | 46 automated assertions across 10 suites with 100% success rate. | ✅ Compliant |
 | **Compliance Documentation** | Dedicated `TESTING.md`, `SECURITY.md`, and `README.md`. | ✅ Compliant |
 
 ---

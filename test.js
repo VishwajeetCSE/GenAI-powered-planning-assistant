@@ -27,6 +27,8 @@ import {
   calculateInventoryMetrics,
   runHeuristicAI,
   askPlanGenie,
+  isValidGeminiApiKey,
+  isSupportedGeminiModel,
   getDefaultState,
   validateAndNormalizePlan,
   saveStateToStorage,
@@ -364,6 +366,39 @@ describe('Suite 5: PlanGenie Contextual AI Engine & Knowledge Graph', () => {
     const reply = await askPlanGenie('Suggest 5 themes', context, '', 'gemini-1.5-flash');
     assert(typeof reply === 'string');
     assert(reply.length > 50);
+  });
+
+  it('validates Gemini API keys and allowlists only UI-supported models', () => {
+    assert(isValidGeminiApiKey(`AIza${'A'.repeat(35)}`));
+    assert(!isValidGeminiApiKey('AIzaTooShort'));
+    assert(isSupportedGeminiModel('gemini-1.5-flash'));
+    assert(!isSupportedGeminiModel('../../unexpected-model'));
+  });
+
+  it('uses the live API only with a valid key and an allowlisted model', async () => {
+    const originalFetch = globalThis.fetch;
+    let requestedUrl = '';
+    globalThis.fetch = async (url) => {
+      requestedUrl = String(url);
+      return {
+        ok: true,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: 'A live response' }] } }] })
+      };
+    };
+
+    try {
+      const validKey = `AIza${'B'.repeat(35)}`;
+      const liveReply = await askPlanGenie('Help me plan', context, validKey, 'gemini-1.5-flash');
+      assertEqual(liveReply, 'A live response');
+      assertContains(requestedUrl, 'models/gemini-1.5-flash:generateContent');
+
+      requestedUrl = '';
+      const fallbackReply = await askPlanGenie('Help me plan', context, validKey, '../../unexpected-model');
+      assert(fallbackReply.length > 50);
+      assertEqual(requestedUrl, '', 'Unsupported model must never trigger a network request');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
 

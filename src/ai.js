@@ -5,7 +5,25 @@
  * @license MIT
  */
 
-import { ARCHETYPE_DEFAULTS } from './constants.js';
+import { ARCHETYPE_DEFAULTS, GEMINI_MODELS, NUMERIC_BOUNDS } from './constants.js';
+import { sanitizeString } from './security.js';
+
+const GEMINI_API_KEY_PATTERN = /^AIza[0-9A-Za-z_-]{35}$/;
+
+/**
+ * Validates the expected Google AI API-key shape before a request is sent.
+ * This is input validation, not a substitute for provider-side authorization.
+ * @param {unknown} apiKey
+ * @returns {boolean}
+ */
+export function isValidGeminiApiKey(apiKey) {
+  return typeof apiKey === 'string' && GEMINI_API_KEY_PATTERN.test(apiKey.trim());
+}
+
+/** @param {unknown} model @returns {boolean} */
+export function isSupportedGeminiModel(model) {
+  return typeof model === 'string' && GEMINI_MODELS.includes(model);
+}
 
 /**
  * Heuristic AI Brain: Processes prompts contextually using rule engine & knowledge graph.
@@ -179,11 +197,12 @@ Hello! I have analyzed your **${eventLabel}** plan for **${guests} guests** with
  * @returns {Promise<string>} Generated markdown string
  */
 export async function askPlanGenie(prompt, context, apiKey = '', model = 'gemini-1.5-flash') {
-  if (!apiKey || !apiKey.trim().startsWith('AIza')) {
+  const normalizedKey = typeof apiKey === 'string' ? apiKey.trim() : '';
+  if (!isValidGeminiApiKey(normalizedKey) || !isSupportedGeminiModel(model)) {
     return runHeuristicAI(prompt, context);
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(normalizedKey)}`;
 
   const systemInstruction = `You are PlanGenie, an expert AI event planning consultant.
 Active Event Context:
@@ -212,11 +231,17 @@ Deliver structured, actionable, and encouraging event advice in clean GitHub-fla
     }
   };
 
+  const requestController = typeof AbortController === 'function' ? new AbortController() : null;
+  const timeoutId = requestController
+    ? setTimeout(() => requestController.abort(), NUMERIC_BOUNDS.GEMINI_REQUEST_TIMEOUT_MS)
+    : null;
+
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      ...(requestController ? { signal: requestController.signal } : {})
     });
 
     if (!res.ok) {
@@ -227,11 +252,13 @@ Deliver structured, actionable, and encouraging event advice in clean GitHub-fla
     const data = await res.json();
     const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (candidateText && candidateText.trim()) {
-      return candidateText.trim();
+      return sanitizeString(candidateText, NUMERIC_BOUNDS.AI_RESPONSE_MAX_LEN);
     }
     return runHeuristicAI(prompt, context);
   } catch (err) {
     console.warn('Network error reaching Gemini API. Falling back to local Heuristic AI.', err);
     return runHeuristicAI(prompt, context);
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
   }
 }
