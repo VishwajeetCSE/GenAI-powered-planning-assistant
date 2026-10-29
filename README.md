@@ -211,7 +211,7 @@ PlanFlow AI utilizes a hybrid two-tier AI architecture:
 
 ## 🧪 Automated Testing Assets
 
-PlanFlow AI includes a self-contained Node.js unit and integration test runner with **43 automated test assertions across 10 test suites**:
+PlanFlow AI includes a self-contained Node.js unit and integration test runner with **44 automated test assertions across 10 test suites**:
 
 ```bash
 # Run all automated tests
@@ -232,9 +232,9 @@ npm run lint
 ▶ Test Suite: Suite 7: Event Risk Analysis & Mitigation Matrix Engine (5/5 PASS)
 ▶ Test Suite: Suite 8: Supplies & Equipment Inventory Engine (5/5 PASS)
 ▶ Test Suite: Suite 9: Debounce Utility & Performance Optimization (2/2 PASS)
-▶ Test Suite: Suite 10: Exploit Regression & Import Schema Sanitization Gate (3/3 PASS)
+▶ Test Suite: Suite 10: Exploit Regression & Import Schema Sanitization Gate (4/4 PASS)
 
-Total Assertions: 43 | Passed: 43 | Failed: 0 | Execution Time: < 250ms
+Total Assertions: 44 | Passed: 44 | Failed: 0 | Execution Time: < 1 second
 ✨ 100% TESTS PASSED! All 10 suites verified successfully.
 ```
 *Detailed QA edge-case matrices and manual verification scripts are available in [`TESTING.md`](./TESTING.md).*
@@ -263,7 +263,8 @@ Because PlanFlow AI has **zero build dependencies**, you can run it immediately 
 
 3. **Run the test suite**:
    ```bash
-   node test.js
+   npm run lint
+   npm test
    ```
 
 ---
@@ -276,11 +277,13 @@ Because PlanFlow AI has **zero build dependencies**, you can run it immediately 
 ├── LICENSE          # Standard MIT Open Source License
 ├── index.html       # Accessible semantic HTML5 application structure with CSP
 ├── styles.css       # Modern responsive design tokens, glassmorphism & print stylesheet
-├── app.js           # Pure modular Vanilla JS core logic, calculations & AI engines ('use strict')
+├── app.js           # Thin browser UI controller and presentation layer
 ├── favicon.svg      # Branded vector favicon for browser and Vercel hosting
 ├── vercel.json      # Production Vercel deployment configuration & security headers
 ├── package.json     # Project metadata and test scripts
-├── test.js          # Self-contained Node.js automated test runner (40/40 tests pass)
+├── src/             # Native ES modules for state, security, budgeting, AI, and domain engines
+├── scripts/lint.js  # Zero-dependency syntax, security, and UI-contract gate
+├── test.js          # Self-contained Node.js automated test runner (44/44 tests pass)
 ├── TESTING.md       # Edge-case matrix, browser matrix & manual QA protocol
 ├── SECURITY.md      # Threat model, XSS defense strategy, CSP & privacy rules
 └── README.md        # Comprehensive project presentation & documentation
@@ -303,7 +306,7 @@ Because PlanFlow AI has **zero build dependencies**, you can run it immediately 
 | **Inventory & Supplies Tracker**| Equipment logistics, quantity status, and On-Site deployment %. | ✅ Compliant |
 | **PlanGenie AI Coach** | Contextual brainstormer with 5 preset prompts + optional Gemini API. | ✅ Compliant |
 | **Local Persistence & Export** | LocalStorage auto-save, JSON import/export, and print-ready summary. | ✅ Compliant |
-| **Automated Tests (`test.js`)** | 40 automated assertions across 9 suites with 100% success rate. | ✅ Compliant |
+| **Automated Tests (`test.js`)** | 44 automated assertions across 10 suites with 100% success rate. | ✅ Compliant |
 | **Compliance Documentation** | Dedicated `TESTING.md`, `SECURITY.md`, and `README.md`. | ✅ Compliant |
 
 ---

@@ -10,10 +10,10 @@ PlanFlow AI operates as a client-side, local-first web application with optional
 
 | Threat Category | Potential Attack Vector | Impact Level | Mitigation Strategy |
 | :--- | :--- | :---: | :--- |
-| **Cross-Site Scripting (XSS)** | Malicious strings injected via task names, vendor notes, risk descriptions, prompt inputs, or imported JSON files. | **High** | Strict HTML entity escaping via `escapeHTML()` covering `<`, `>`, `"`, `'`, and `/`. Zero direct assignment of unescaped user input to `innerHTML`. |
-| **Content Security Policy (CSP)** | Injection of external unauthorized scripts or iframes. | **High** | Dual-layer CSP enforcement via both `<meta http-equiv="Content-Security-Policy">` and `vercel.json` headers restricting scripts to `'self'` and `'unsafe-inline'`. |
-| **Data Exfiltration** | Unauthorized exposure of user planning budgets, guest lists, or API keys. | **High** | Zero remote tracking or server-side telemetry. All planning data and API keys are stored solely in the user's private browser `LocalStorage`. |
-| **API Key Leakage & Abuse** | Inadvertent disclosure or brute-force misuse of Google Gemini API keys. | **Medium** | API key syntax is strictly validated (`AIza...`), stored client-side only, never committed to git, and sent strictly over encrypted HTTPS to Google's official endpoint. |
+| **Cross-Site Scripting (XSS)** | Malicious strings injected via task names, vendor notes, risk descriptions, prompt inputs, or imported JSON files. | **High** | Imports are normalized and bounded; dynamic text is escaped before the reviewed template-rendering boundary. Attribute IDs are restricted to a safe token set. |
+| **Content Security Policy (CSP)** | Injection of external unauthorized scripts or iframes. | **High** | Dual-layer CSP via `<meta http-equiv="Content-Security-Policy">` and `vercel.json` permits scripts only from `'self'` and blocks framing. |
+| **Data Exfiltration** | Unauthorized exposure of user planning budgets, guest lists, or API keys. | **High** | Zero remote tracking or server-side telemetry. Planning data stays in origin-scoped `localStorage`; optional API keys are session-only. |
+| **API Key Leakage & Abuse** | Inadvertent disclosure or brute-force misuse of Google Gemini API keys. | **Medium** | Keys are stored only in `sessionStorage`, excluded from exports, and sent solely to Google's official endpoint over HTTPS. |
 | **Chat Flood & Prompt Injection** | High-frequency automated spam or malformed prompt flooding. | **Medium** | Client-side rate-limiting cooldown (2.5s window) and text length bounding (`CHAT_MAX_LEN: 500`). |
 | **DOM-based State Poisoning** | Crafted malicious JSON files loaded via the "Import JSON" utility. | **Medium** | Schema verification (`v3`), safe parsing wrapped in `try/catch`, and strict numeric/text bounds clamping. |
 | **Denial of Service (Client CPU)** | Extreme numeric inputs causing division-by-zero or excessive DOM rendering loops. | **Low** | Strict input boundary clamping (`sanitizeNumber` limits budget to $100M, guests to 100k, debounce delay of 150ms on sliders). |
@@ -70,7 +70,7 @@ When users optionally configure their Google Gemini API key:
 Enforced across both `index.html` and `vercel.json`:
 
 ```http
-Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com; img-src 'self' data: https:; object-src 'none'; base-uri 'self';
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com; img-src 'self' data: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';
 ```
 
 ---

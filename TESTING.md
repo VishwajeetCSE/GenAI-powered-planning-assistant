@@ -6,7 +6,7 @@ This document outlines the testing strategy, automated test coverage, edge-case 
 
 ## 1. Automated Test Runner (`test.js`)
 
-PlanFlow AI includes a zero-dependency, self-contained test runner engineered directly in Node.js. It requires no third-party libraries (no Jest, Mocha, or Chai needed) and completes execution in less than 250ms.
+PlanFlow AI includes a zero-dependency, self-contained test runner engineered directly in Node.js. It requires no third-party libraries (no Jest, Mocha, or Chai needed) and normally completes in under one second.
 
 ### Execution Command
 ```bash
@@ -25,8 +25,8 @@ node test.js
 | **Suite 7: Risk Analysis & Mitigation Matrix** | Archetype threat generation, weighted safety score calculations, status transitions (Action Needed -> Monitoring -> Mitigated) | 5 | ✅ PASS (100%) |
 | **Suite 8: Supplies & Equipment Inventory** | Domain asset roster generation, deployment readiness percentage, zero-inventory handling, On-Site status tracking | 5 | ✅ PASS (100%) |
 | **Suite 9: Debounce & Performance Guards** | High-frequency input debounce execution, argument preservation, deferred timer safety | 2 | ✅ PASS (100%) |
-| **Suite 10: Exploit Regression Gate** | JSON import schema validation, numeric coercion of inventory quantity against DOM-XSS, sensitive API key stripping | 3 | ✅ PASS (100%) |
-| **Total** | **End-to-End System Logic** | **43** | **✅ 100% PASS** |
+| **Suite 10: Exploit Regression Gate** | JSON import schema validation, numeric coercion of inventory quantity, safe identifier normalization, and sensitive API key stripping | 4 | ✅ PASS (100%) |
+| **Total** | **End-to-End System Logic** | **44** | **✅ 100% PASS** |
 
 ---
 
@@ -37,7 +37,7 @@ node test.js
 | **EC-01** | Total Budget | `0` or negative number (`-5000`) | Sanitizer clamps budget to lower boundary (`$100`), preventing zero or negative budgeting. | Automated in `test.js` Suite 1 & 2 | ✅ Verified |
 | **EC-02** | Total Budget | Extremely large number (`999,999,999`) | Sanitizer bounds budget to `$100,000,000` to prevent integer overflow and visual layout breakdown. | Automated in `test.js` Suite 1 | ✅ Verified |
 | **EC-03** | Guest Count | `0` or negative number | Clamped to minimum `1` attendee to strictly prevent division-by-zero (`NaN`) in per-guest calculations. | Automated in `test.js` Suite 2 | ✅ Verified |
-| **EC-04** | XSS Injections | `<script>alert('pwned')</script>`, `<img src=x onerror=...>` | Strict `escapeHTML()` converts all dangerous characters to `&lt;`, `&gt;`, `&quot;`, `&#x2F;`. No unescaped user string is passed to `innerHTML`. | Automated in `test.js` Suite 1 | ✅ Verified |
+| **EC-04** | XSS Injections | `<script>alert('pwned')</script>`, `<img src=x onerror=...>` | Strict `escapeHTML()` converts dangerous characters to entities before dynamic template rendering. Imported identifiers are restricted to attribute-safe tokens. | Automated in `test.js` Suites 1 & 10 | ✅ Verified |
 | **EC-05** | Category Sliders | Total sliders adjusted to `125%` | Immediate visual warning banner appears (`alert-danger`), variance card turns red displaying negative variance, and status updates. | Automated in `test.js` Suite 2 | ✅ Verified |
 | **EC-06** | Category Sliders | Total sliders adjusted to `80%` | Warning banner switches to yellow (`alert-warning`), displaying unassigned reserve funds available. | Automated in `test.js` Suite 2 | ✅ Verified |
 | **EC-07** | LocalStorage | Corrupted JSON payload in storage | Catch block safely intercepts `JSON.parse` syntax error, restores `getDefaultState()`, and logs diagnostic warning. | Automated in `test.js` Suite 6 | ✅ Verified |

@@ -16,6 +16,17 @@ export const STORAGE_KEY = 'planflow_ai_v2_state';
 export const SCHEMA_VERSION = 3;
 
 /**
+ * Converts an imported identifier into a conservative, attribute-safe token.
+ * @param {unknown} value - Untrusted imported identifier
+ * @param {string} fallback - Safe fallback identifier
+ * @returns {string} Identifier limited to letters, digits, underscores, and hyphens
+ */
+function sanitizeIdentifier(value, fallback) {
+  const normalized = sanitizeString(value, 50).replace(/[^A-Za-z0-9_-]/g, '-');
+  return normalized || fallback;
+}
+
+/**
  * Generates an initial default state for a given event archetype.
  * NOTE: API keys are strictly excluded from state and never persisted to localStorage.
  * @param {string} [archetype='wedding'] - Target event archetype
@@ -91,7 +102,7 @@ export function validateAndNormalizePlan(raw) {
   let milestones = fallback.milestones;
   if (Array.isArray(raw.milestones)) {
     milestones = raw.milestones.slice(0, 50).map((m, idx) => ({
-      id: sanitizeString(m?.id || `m-custom-${idx}`, 50),
+      id: sanitizeIdentifier(m?.id, `m-custom-${idx}`),
       phaseId: sanitizeString(m?.phaseId || 'phase-custom', 30),
       phaseTitle: sanitizeString(m?.phaseTitle || 'Custom Phase', 80),
       text: sanitizeString(m?.text || 'Untitled Task', NUMERIC_BOUNDS.TEXT_MAX_LEN),
@@ -105,7 +116,7 @@ export function validateAndNormalizePlan(raw) {
     vendors = raw.vendors.slice(0, 50).map((v, idx) => {
       const validStatuses = ['Prospecting', 'Contacted', 'Negotiating', 'Booked'];
       return {
-        id: sanitizeString(v?.id || `v-custom-${idx}`, 50),
+        id: sanitizeIdentifier(v?.id, `v-custom-${idx}`),
         name: sanitizeString(v?.name || 'Unnamed Vendor', 100),
         category: sanitizeString(v?.category || 'General', 50),
         quoted: sanitizeNumber(v?.quoted, 0, 100000000, 0),
@@ -123,7 +134,7 @@ export function validateAndNormalizePlan(raw) {
       const validImpact = ['Minor', 'Moderate', 'Critical'];
       const validStatus = ['Mitigated', 'Monitoring', 'Action Needed'];
       return {
-        id: sanitizeString(r?.id || `r-custom-${idx}`, 50),
+        id: sanitizeIdentifier(r?.id, `r-custom-${idx}`),
         category: sanitizeString(r?.category || 'General', 40),
         title: sanitizeString(r?.title || 'Identified Risk', 120),
         probability: validProb.includes(r?.probability) ? r.probability : 'Medium',
@@ -140,7 +151,7 @@ export function validateAndNormalizePlan(raw) {
     inventory = raw.inventory.slice(0, 60).map((item, idx) => {
       const validStatus = ['Packed', 'Sourced', 'In-Transit', 'On-Site'];
       return {
-        id: sanitizeString(item?.id || `inv-custom-${idx}`, 50),
+        id: sanitizeIdentifier(item?.id, `inv-custom-${idx}`),
         name: sanitizeString(item?.name || 'Unnamed Equipment', 100),
         category: sanitizeString(item?.category || 'Logistics', 40),
         quantity: Math.max(1, Math.round(sanitizeNumber(item?.quantity, 1, 100000, 1))),

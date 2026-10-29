@@ -1,7 +1,7 @@
 /**
  * @file lint.js
  * @description Deterministic static quality and security linter.
- * Enforces syntax correctness, AST security rules, and DOM-XSS protections without bulky dependencies.
+ * Enforces syntax correctness and lightweight security rules without bulky dependencies.
  */
 
 import fs from 'node:fs';
@@ -21,7 +21,8 @@ const targetFiles = [
   'src/risks.js',
   'src/inventory.js',
   'src/ai.js',
-  'src/storage.js'
+  'src/storage.js',
+  'scripts/lint.js'
 ];
 
 console.log('\n🔍 Running PlanFlow AI Deterministic Quality & Security Linter...\n');
@@ -52,8 +53,10 @@ for (const file of targetFiles) {
   lines.forEach((line, index) => {
     const lineNum = index + 1;
 
-    // Check for direct .innerHTML assignments outside of setSanitizedHTML definition
-    if (line.includes('.innerHTML =') && !line.includes('template.innerHTML =')) {
+    // The security helper is the sole reviewed template parsing boundary.
+    const isLinterSource = file === 'scripts/lint.js';
+    const isReviewedTemplateBoundary = file === 'src/security.js' && line.includes('template.innerHTML =');
+    if (!isLinterSource && line.includes('.innerHTML =') && !isReviewedTemplateBoundary) {
       console.error(`❌ Security Violation in ${file}:${lineNum} — Direct DOM .innerHTML assignment detected.`);
       console.error(`   Line: ${line.trim()}`);
       console.error(`   Mitigation: Use setSanitizedHTML() or replaceChildren().`);
@@ -61,19 +64,34 @@ for (const file of targetFiles) {
     }
 
     // Check for eval()
-    if (/\beval\s*\(/.test(line)) {
+    if (!isLinterSource && /\beval\s*\(/.test(line)) {
       console.error(`❌ Security Violation in ${file}:${lineNum} — Use of eval() is strictly prohibited.`);
       issuesFound++;
     }
 
     // Check for document.write
-    if (line.includes('document.write')) {
+    if (!isLinterSource && line.includes('document.write')) {
       console.error(`❌ Security Violation in ${file}:${lineNum} — document.write is prohibited.`);
       issuesFound++;
     }
   });
 
   console.log(`  ✔ Verified: ${file}`);
+}
+
+// 3. UI Contract Check: every statically referenced controller ID must exist in the HTML shell.
+const appSource = fs.readFileSync(path.resolve('app.js'), 'utf8');
+const htmlShell = fs.readFileSync(path.resolve('index.html'), 'utf8');
+const referencedIds = [...appSource.matchAll(/getElementById\('([^']+)'\)/g)]
+  .map((match) => match[1])
+  .filter((id) => id !== 'temp-thinking');
+const missingIds = [...new Set(referencedIds)].filter((id) => !htmlShell.includes(`id="${id}"`));
+
+if (missingIds.length > 0) {
+  console.error(`❌ UI Contract Violation — app.js references missing HTML IDs: ${missingIds.join(', ')}`);
+  issuesFound++;
+} else {
+  console.log('  ✔ Verified: app.js DOM references resolve in index.html');
 }
 
 console.log('\n============================================================');

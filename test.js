@@ -687,6 +687,23 @@ describe('Suite 10: Exploit Regression & Import Schema Sanitization Gate', () =>
     assertEqual(normalized.apiKey, undefined, 'apiKey must be stripped');
     assertEqual(normalized.arbitraryInjectedField, undefined, 'Arbitrary keys must be stripped');
   });
+
+  it('normalizes imported identifiers before they can be used in DOM attributes', () => {
+    const normalized = validateAndNormalizePlan({
+      eventType: 'wedding',
+      milestones: [{
+        id: 'task\" autofocus onfocus=alert(1)',
+        phaseId: 'phase-long',
+        phaseTitle: 'Planning',
+        text: 'Review venue contract',
+        done: false
+      }]
+    });
+
+    assertEqual(normalized.milestones[0].id, 'task--autofocus-onfocus-alert-1-');
+    assertFalse(normalized.milestones[0].id.includes('"'));
+    assertFalse(normalized.milestones[0].id.includes(' '));
+  });
 });
 
 // ============================================================================

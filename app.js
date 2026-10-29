@@ -51,8 +51,10 @@ export class PlanFlowUI {
 
     // Session-only in-memory API key (Strictly NOT stored in localStorage or exported plans)
     this.sessionApiKey = '';
+    this.sessionGeminiModel = 'gemini-1.5-flash';
     if (typeof window !== 'undefined' && window.sessionStorage) {
       this.sessionApiKey = window.sessionStorage.getItem('planflow_session_gemini_key') || '';
+      this.sessionGeminiModel = window.sessionStorage.getItem('planflow_session_gemini_model') || this.sessionGeminiModel;
     }
 
     this.activeVendorFilter = 'all';
@@ -83,33 +85,35 @@ export class PlanFlowUI {
 
     // Step 1: Archetypes & Parameters
     this.archetypeCards = document.querySelectorAll('.archetype-card');
-    this.activeArchetypeBadge = document.getElementById('active-archetype-badge');
-    this.totalBudgetInput = document.getElementById('total-budget-input');
-    this.guestCountInput = document.getElementById('guest-count-input');
-    this.horizonMonthsSelect = document.getElementById('horizon-months-select');
-    this.locationStyleSelect = document.getElementById('location-style-select');
-    this.eventVibeSelect = document.getElementById('event-vibe-select');
+    this.activeArchetypeBadge = document.getElementById('active-event-badge');
+    this.totalBudgetInput = document.getElementById('input-budget');
+    this.guestCountInput = document.getElementById('input-guests');
+    this.horizonMonthsSelect = document.getElementById('input-timeline');
+    this.locationStyleSelect = document.getElementById('input-location');
+    this.eventVibeSelect = document.getElementById('input-vibe');
 
     // Step 2: Budget Calculator
     this.currencyLabels = document.querySelectorAll('.currency-label');
-    this.kpiTotalBudget = document.getElementById('kpi-total-budget');
-    this.kpiAllocated = document.getElementById('kpi-allocated');
-    this.kpiVariance = document.getElementById('kpi-variance');
-    this.kpiCostPerGuest = document.getElementById('kpi-cost-per-guest');
+    this.kpiTotalAllocated = document.getElementById('kpi-total-allocated');
+    this.kpiPercentageSum = document.getElementById('kpi-percentage-sum');
+    this.kpiVarianceAmount = document.getElementById('kpi-variance-amount');
+    this.kpiVarianceStatus = document.getElementById('kpi-variance-status');
+    this.kpiCostPerGuest = document.getElementById('kpi-per-guest');
     this.budgetWarningBanner = document.getElementById('budget-warning-banner');
     this.budgetWarningText = document.getElementById('budget-warning-text');
-    this.distributionBar = document.getElementById('budget-distribution-bar');
+    this.distributionBar = document.getElementById('distribution-bar-container');
     this.categorySlidersContainer = document.getElementById('category-sliders-container');
-    this.btnRebalanceDefaults = document.getElementById('btn-rebalance-defaults');
+    this.btnRebalanceDefaults = document.getElementById('btn-rebalance-budget');
 
     // Step 3: Roadmap & Readiness
     this.readinessScoreText = document.getElementById('readiness-score-text');
-    this.readinessProgressBar = document.getElementById('readiness-progress-bar');
-    this.readinessStatusBadge = document.getElementById('readiness-status-badge');
+    this.readinessProgressTrack = document.getElementById('readiness-progress');
+    this.readinessProgressBar = document.getElementById('readiness-progress-fill');
+    this.readinessStatusBadge = document.getElementById('readiness-badge');
     this.milestonesContainer = document.getElementById('milestones-container');
-    this.quickTaskInput = document.getElementById('quick-task-input');
-    this.quickTaskPhaseSelect = document.getElementById('quick-task-phase-select');
-    this.btnQuickAddTask = document.getElementById('btn-quick-add-task');
+    this.addTaskForm = document.getElementById('add-task-form');
+    this.quickTaskInput = document.getElementById('new-task-title');
+    this.quickTaskPhaseSelect = document.getElementById('new-task-phase');
 
     // Step 4: Vendor Tracker & Negotiation
     this.vendorTablist = document.getElementById('vendor-tablist');
@@ -121,7 +125,6 @@ export class PlanFlowUI {
     this.vendorCategorySelect = document.getElementById('vendor-category-select');
     this.vendorQuotedInput = document.getElementById('vendor-quoted-input');
     this.vendorStatusSelect = document.getElementById('vendor-status-select');
-    this.vendorNotesInput = document.getElementById('vendor-notes-input');
     this.btnCancelVendor = document.getElementById('btn-cancel-vendor');
 
     // Step 5: Risk Analysis Matrix
@@ -130,7 +133,7 @@ export class PlanFlowUI {
     this.riskCardsContainer = document.getElementById('risk-cards-container');
     this.btnAddRiskToggle = document.getElementById('btn-add-risk-toggle');
     this.addRiskForm = document.getElementById('add-risk-form');
-    this.riskCatSelect = document.getElementById('risk-cat-select');
+    this.riskCatSelect = document.getElementById('risk-category-select');
     this.riskTitleInput = document.getElementById('risk-title-input');
     this.riskProbSelect = document.getElementById('risk-prob-select');
     this.riskImpactSelect = document.getElementById('risk-impact-select');
@@ -155,8 +158,9 @@ export class PlanFlowUI {
 
     // Step 7: PlanGenie AI Chat
     this.chatMessagesContainer = document.getElementById('chat-messages-container');
-    this.chatInput = document.getElementById('chat-input');
-    this.btnSendChat = document.getElementById('btn-send-chat');
+    this.chatForm = document.getElementById('chat-form');
+    this.chatInput = document.getElementById('chat-input-field');
+    this.btnClearChat = document.getElementById('btn-clear-chat');
     this.promptChips = document.querySelectorAll('.prompt-chip');
 
     // Negotiation Script Dialog
@@ -164,7 +168,9 @@ export class PlanFlowUI {
     this.btnCloseNegotiationDialog = document.getElementById('btn-close-negotiation-dialog');
     this.negotiationMetaInfo = document.getElementById('negotiation-meta-info');
     this.negotiationScriptContent = document.getElementById('negotiation-script-content');
+    this.negotiationTipsList = document.getElementById('negotiation-tips-list');
     this.btnCopyScript = document.getElementById('btn-copy-script');
+    this.btnDismissNegotiation = document.getElementById('btn-dismiss-negotiation');
     this.copyBtnText = document.getElementById('copy-btn-text');
     this.btnEmailMailto = document.getElementById('btn-email-mailto');
 
@@ -172,6 +178,8 @@ export class PlanFlowUI {
     this.settingsDialog = document.getElementById('settings-dialog');
     this.btnOpenSettings = document.getElementById('btn-open-settings');
     this.btnCloseSettingsDialog = document.getElementById('btn-close-settings-dialog');
+    this.btnDismissSettings = document.getElementById('btn-dismiss-settings');
+    this.btnSaveSettings = document.getElementById('btn-save-settings');
     this.settingsForm = document.getElementById('settings-form');
     this.geminiApiKeyInput = document.getElementById('gemini-api-key-input');
     this.geminiModelSelect = document.getElementById('gemini-model-select');
@@ -283,12 +291,9 @@ export class PlanFlowUI {
     });
 
     // Milestone Quick-Add
-    this.btnQuickAddTask?.addEventListener('click', () => this.addQuickTask());
-    this.quickTaskInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        this.addQuickTask();
-      }
+    this.addTaskForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.addQuickTask();
     });
 
     // Accessible Tabs: Vendors
@@ -341,12 +346,14 @@ export class PlanFlowUI {
     this.addInventoryForm?.addEventListener('submit', (e) => this.handleAddInventory(e));
 
     // PlanGenie Chat
-    this.btnSendChat?.addEventListener('click', () => this.handleChatSubmit());
-    this.chatInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        this.handleChatSubmit();
-      }
+    this.chatForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.handleChatSubmit();
+    });
+    this.btnClearChat?.addEventListener('click', () => {
+      this.state.chatHistory = getDefaultState(this.state.eventType).chatHistory;
+      this.saveAndRender();
+      this.showToast('Conversation cleared.');
     });
 
     this.promptChips?.forEach(chip => {
@@ -361,28 +368,34 @@ export class PlanFlowUI {
 
     // Negotiation Dialog Controls
     this.btnCloseNegotiationDialog?.addEventListener('click', () => this.negotiationDialog?.close());
+    this.btnDismissNegotiation?.addEventListener('click', () => this.negotiationDialog?.close());
     this.btnCopyScript?.addEventListener('click', () => this.copyNegotiationScript());
 
     // Settings Dialog Controls
     this.btnOpenSettings?.addEventListener('click', () => {
       if (this.geminiApiKeyInput) this.geminiApiKeyInput.value = this.sessionApiKey;
+      if (this.geminiModelSelect) this.geminiModelSelect.value = this.sessionGeminiModel;
       this.updateSettingsStatus();
       this.settingsDialog?.showModal();
     });
 
-    this.btnCloseSettingsDialog?.addEventListener('click', () => this.settingsDialog?.close());
-
-    this.settingsForm?.addEventListener('submit', (e) => {
+    const saveSettings = (e) => {
       e.preventDefault();
       const key = this.geminiApiKeyInput?.value.trim() || '';
       this.sessionApiKey = key;
+      this.sessionGeminiModel = this.geminiModelSelect?.value || 'gemini-1.5-flash';
       if (typeof window !== 'undefined' && window.sessionStorage) {
         window.sessionStorage.setItem('planflow_session_gemini_key', key);
+        window.sessionStorage.setItem('planflow_session_gemini_model', this.sessionGeminiModel);
       }
       this.updateSettingsStatus();
       this.settingsDialog?.close();
       this.showToast(key ? 'Gemini API key saved for this session.' : 'Reverted to offline Heuristic AI.');
-    });
+    };
+    this.settingsForm?.addEventListener('submit', saveSettings);
+    this.btnSaveSettings?.addEventListener('click', saveSettings);
+    this.btnCloseSettingsDialog?.addEventListener('click', () => this.settingsDialog?.close());
+    this.btnDismissSettings?.addEventListener('click', () => this.settingsDialog?.close());
 
     this.btnClearApiKey?.addEventListener('click', () => {
       this.sessionApiKey = '';
@@ -499,24 +512,39 @@ export class PlanFlowUI {
       this.state.guests
     );
 
-    if (this.kpiTotalBudget) this.kpiTotalBudget.textContent = formatCurrency(budgetData.totalBudget, this.state.currency);
-    if (this.kpiAllocated) this.kpiAllocated.textContent = `${budgetData.sumPercentage}%`;
+    if (this.kpiTotalAllocated) this.kpiTotalAllocated.textContent = formatCurrency(budgetData.allocatedTotal, this.state.currency);
+    if (this.kpiPercentageSum) {
+      this.kpiPercentageSum.textContent = `${budgetData.sumPercentage}% of Total Budget`;
+      this.kpiPercentageSum.className = `kpi-subtext ${budgetData.isBalanced ? 'text-success' : budgetData.isOverBudget ? 'text-danger' : 'text-warning'}`;
+    }
     if (this.kpiCostPerGuest) this.kpiCostPerGuest.textContent = `${formatCurrency(budgetData.costPerGuest, this.state.currency)} / guest`;
 
-    if (this.kpiVariance) {
+    if (this.kpiVarianceAmount) {
       const isOver = budgetData.isOverBudget;
       const isBalanced = budgetData.isBalanced;
       const varianceFormatted = formatCurrency(Math.abs(budgetData.varianceAmount), this.state.currency);
 
       if (isBalanced) {
-        this.kpiVariance.textContent = '$0 (Balanced)';
-        this.kpiVariance.className = 'kpi-value text-success';
+        this.kpiVarianceAmount.textContent = `${formatCurrency(0, this.state.currency)} (Balanced)`;
+        this.kpiVarianceAmount.className = 'kpi-value text-success';
+        if (this.kpiVarianceStatus) {
+          this.kpiVarianceStatus.textContent = '100% Allocated';
+          this.kpiVarianceStatus.className = 'kpi-subtext text-success';
+        }
       } else if (isOver) {
-        this.kpiVariance.textContent = `+${varianceFormatted} (Over)`;
-        this.kpiVariance.className = 'kpi-value text-danger';
+        this.kpiVarianceAmount.textContent = `+${varianceFormatted} (Over)`;
+        this.kpiVarianceAmount.className = 'kpi-value text-danger';
+        if (this.kpiVarianceStatus) {
+          this.kpiVarianceStatus.textContent = `${budgetData.sumPercentage}% Allocated`;
+          this.kpiVarianceStatus.className = 'kpi-subtext text-danger';
+        }
       } else {
-        this.kpiVariance.textContent = `-${varianceFormatted} (Reserve)`;
-        this.kpiVariance.className = 'kpi-value text-warning';
+        this.kpiVarianceAmount.textContent = `-${varianceFormatted} (Reserve)`;
+        this.kpiVarianceAmount.className = 'kpi-value text-warning';
+        if (this.kpiVarianceStatus) {
+          this.kpiVarianceStatus.textContent = `${budgetData.sumPercentage}% Allocated (Reserve Available)`;
+          this.kpiVarianceStatus.className = 'kpi-subtext text-warning';
+        }
       }
     }
 
@@ -606,6 +634,7 @@ export class PlanFlowUI {
     const readiness = calculateReadiness(this.state.milestones);
     if (this.readinessScoreText) this.readinessScoreText.textContent = `${readiness.score}%`;
     if (this.readinessProgressBar) this.readinessProgressBar.style.width = `${readiness.score}%`;
+    if (this.readinessProgressTrack) this.readinessProgressTrack.setAttribute('aria-valuenow', String(readiness.score));
     if (this.readinessStatusBadge) this.readinessStatusBadge.textContent = readiness.status;
 
     if (!this.milestonesContainer) return;
@@ -681,11 +710,11 @@ export class PlanFlowUI {
 
     const phaseId = this.quickTaskPhaseSelect?.value || 'phase-custom';
     const phaseTitleMap = {
-      'phase-1': 'Phase 1: Foundation & Planning',
-      'phase-2': 'Phase 2: Core Vendor Commitments',
-      'phase-3': 'Phase 3: Final Details & RSVP',
-      'phase-4': 'Phase 4: Week of Event',
-      'phase-5': 'Phase 5: Day-Of Execution'
+      'phase-long': '6+ Months Out: Vision, Venue & Big Picture',
+      'phase-mid': '3 Months Out: Vendors & Guest Experience',
+      'phase-near': '1 Month Out: Final Details & Confirmation',
+      'phase-week': 'Week Of Event: Final Logistics',
+      'phase-day': 'Day-Of Run-of-Show'
     };
 
     this.state.milestones.push({
@@ -772,7 +801,7 @@ export class PlanFlowUI {
     const category = this.vendorCategorySelect?.value || 'Venue';
     const quoted = sanitizeNumber(this.vendorQuotedInput?.value, 0, 100000000, 0);
     const status = this.vendorStatusSelect?.value || 'Prospecting';
-    const notes = sanitizeString(this.vendorNotesInput?.value, NUMERIC_BOUNDS.TEXT_MAX_LEN);
+    const notes = '';
 
     if (!name) return;
 
@@ -1026,7 +1055,7 @@ export class PlanFlowUI {
       readinessScore: readiness.score
     };
 
-    const reply = await askPlanGenie(prompt, context, this.sessionApiKey, 'gemini-1.5-flash');
+    const reply = await askPlanGenie(prompt, context, this.sessionApiKey, this.sessionGeminiModel);
 
     document.getElementById('temp-thinking')?.remove();
     this.state.chatHistory.push({ sender: 'bot', text: reply });
@@ -1063,6 +1092,13 @@ export class PlanFlowUI {
 
     if (this.negotiationScriptContent) {
       this.negotiationScriptContent.textContent = `Subject: ${scriptData.subject}\n\n${scriptData.body}`;
+    }
+    if (this.negotiationTipsList) {
+      this.negotiationTipsList.replaceChildren(...scriptData.tips.map((tip) => {
+        const item = document.createElement('li');
+        item.textContent = tip;
+        return item;
+      }));
     }
 
     if (this.btnEmailMailto) {
