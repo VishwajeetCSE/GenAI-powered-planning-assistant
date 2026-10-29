@@ -12,8 +12,8 @@ PlanFlow AI operates as a client-side, local-first web application with optional
 | :--- | :--- | :---: | :--- |
 | **Cross-Site Scripting (XSS)** | Malicious strings injected via task names, vendor notes, risk descriptions, prompt inputs, or imported JSON files. | **High** | Imports are normalized and bounded; dynamic text is escaped before the reviewed template-rendering boundary. Attribute IDs are restricted to a safe token set. |
 | **Content Security Policy (CSP)** | Injection of external unauthorized scripts or iframes. | **High** | Dual-layer CSP via `<meta http-equiv="Content-Security-Policy">` and `vercel.json` permits scripts only from `'self'` and blocks framing. |
-| **Data Exfiltration** | Unauthorized exposure of user planning budgets, guest lists, or API keys. | **High** | Zero remote tracking or server-side telemetry. Planning data stays in origin-scoped `localStorage`; optional API keys are session-only. |
-| **API Key Leakage & Abuse** | Inadvertent disclosure or brute-force misuse of Google Gemini API keys. | **Medium** | Keys are stored only in `sessionStorage`, excluded from exports, and sent solely to Google's official endpoint over HTTPS. |
+| **Data Exfiltration** | Unauthorized exposure of user planning budgets, guest lists, or API keys. | **High** | Zero remote tracking or server-side telemetry. Planning data stays in origin-scoped `localStorage`; optional API keys remain only in page memory. |
+| **API Key Leakage & Abuse** | Inadvertent disclosure or brute-force misuse of Google Gemini API keys. | **Medium** | Keys are never persisted in browser storage, excluded from exports, and sent solely to Google's official endpoint over HTTPS. |
 | **Chat Flood & Prompt Injection** | High-frequency automated spam or malformed prompt flooding. | **Medium** | Client-side rate-limiting cooldown (2.5s window) and text length bounding (`CHAT_MAX_LEN: 500`). |
 | **DOM-based State Poisoning** | Crafted malicious JSON files loaded via the "Import JSON" utility. | **Medium** | Schema verification (`v3`), safe parsing wrapped in `try/catch`, and strict numeric/text bounds clamping. |
 | **Denial of Service (Client CPU)** | Extreme numeric inputs causing division-by-zero or excessive DOM rendering loops. | **Low** | Strict input boundary clamping (`sanitizeNumber` limits budget to $100M, guests to 100k, debounce delay of 150ms on sliders). |
@@ -60,8 +60,8 @@ PlanFlow AI adheres to a strict "Escape by Default" policy:
 When users optionally configure their Google Gemini API key:
 - **Validation**: Enforces standard Google AI API key format (`AIza[0-9A-Za-z-_]{35}`) before attempting network transactions.
 - **Request Boundary**: Allows only the Gemini models offered by the UI, limits API output to 6,000 characters, and aborts a stalled live request after 10 seconds before using the offline fallback.
-- **Session-Only Storage**: The key is stored strictly in memory and `sessionStorage` during the active browser session. It is **NEVER** persisted to `localStorage` and **NEVER** serialized into exported JSON event plans.
-- **Immediate Clearing**: Users can revoke and delete their session key anytime via the in-app AI Settings dialog (`⚙️ -> Remove API Key`). Closing the browser tab automatically flushes the key from memory.
+- **Memory-Only Handling**: The key exists only in the active page's JavaScript memory. It is **NEVER** persisted to `localStorage`, `sessionStorage`, or exported JSON event plans.
+- **Immediate Clearing**: Users can revoke and delete their key anytime via the in-app AI Settings dialog (`⚙️ -> Remove API Key`). Reloading or closing the page automatically flushes it from memory.
 - **Offline Fallback**: Even without an API key, the built-in offline heuristic AI provides full functionality with zero dependencies.
 
 ---

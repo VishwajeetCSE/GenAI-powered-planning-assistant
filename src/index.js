@@ -7,6 +7,7 @@
 
 export * from './constants.js';
 export * from './security.js';
+export * from './ui-accessibility.js';
 export * from './budget.js';
 export * from './milestones.js';
 export * from './vendors.js';

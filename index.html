@@ -357,7 +357,7 @@
           <p class="section-desc">Manage contracted quotes against target category budgets and craft polite, persuasive AI negotiation scripts.</p>
         </div>
         <div class="vendor-top-controls">
-          <button id="btn-add-vendor-toggle" class="btn btn-primary btn-sm">
+          <button type="button" id="btn-add-vendor-toggle" class="btn btn-primary btn-sm" aria-controls="add-vendor-form" aria-expanded="false">
             ➕ Add Vendor
           </button>
         </div>
@@ -374,7 +374,7 @@
       </div>
 
       <!-- Add Vendor Form (Collapsible) -->
-      <form id="add-vendor-form" class="add-vendor-panel hidden" aria-label="Add New Vendor Form">
+      <form id="add-vendor-form" class="add-vendor-panel hidden" aria-label="Add New Vendor Form" aria-hidden="true" hidden>
         <div class="form-grid">
           <div class="form-group">
             <label for="vendor-name-input">Vendor / Company Name</label>
@@ -429,14 +429,14 @@
             <span id="risk-score-text" class="kpi-value text-success" style="font-size: 1.25rem;">100%</span>
             <span id="risk-profile-badge" class="badge badge-success">Low Risk (Protected)</span>
           </div>
-          <button id="btn-add-risk-toggle" class="btn btn-primary btn-sm">
+          <button type="button" id="btn-add-risk-toggle" class="btn btn-primary btn-sm" aria-controls="add-risk-form" aria-expanded="false">
             ➕ Add Risk
           </button>
         </div>
       </div>
 
       <!-- Add Risk Form (Collapsible) -->
-      <form id="add-risk-form" class="add-vendor-panel hidden" aria-label="Add New Risk Item Form">
+      <form id="add-risk-form" class="add-vendor-panel hidden" aria-label="Add New Risk Item Form" aria-hidden="true" hidden>
         <div class="form-grid">
           <div class="form-group">
             <label for="risk-title-input">Potential Risk / Threat</label>
@@ -499,7 +499,7 @@
             <span id="inventory-readiness-text" class="kpi-value" style="font-size: 1.25rem;">0%</span>
             <span id="inventory-status-badge" class="badge badge-neutral">Sourcing Underway</span>
           </div>
-          <button id="btn-add-inventory-toggle" class="btn btn-primary btn-sm">
+          <button type="button" id="btn-add-inventory-toggle" class="btn btn-primary btn-sm" aria-controls="add-inventory-form" aria-expanded="false">
             ➕ Add Item
           </button>
         </div>
@@ -516,7 +516,7 @@
       </div>
 
       <!-- Add Inventory Form (Collapsible) -->
-      <form id="add-inventory-form" class="add-vendor-panel hidden" aria-label="Add New Inventory Item Form">
+      <form id="add-inventory-form" class="add-vendor-panel hidden" aria-label="Add New Inventory Item Form" aria-hidden="true" hidden>
         <div class="form-grid">
           <div class="form-group">
             <label for="inv-name-input">Item Name</label>
@@ -717,7 +717,7 @@
           <div class="form-group">
             <label for="gemini-api-key-input">Google Gemini API Key (Optional)</label>
             <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." autocomplete="off">
-            <span class="helper-text">Key is kept only for this browser session and is sent solely to Google's Generative Language API when you ask a question.</span>
+            <span class="helper-text">Key is kept only in this open page and is sent solely to Google's Generative Language API when you ask a question.</span>
           </div>
 
           <div class="form-group">

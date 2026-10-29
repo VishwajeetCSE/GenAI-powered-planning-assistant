@@ -15,6 +15,7 @@ const targetFiles = [
   'src/index.js',
   'src/constants.js',
   'src/security.js',
+  'src/ui-accessibility.js',
   'src/budget.js',
   'src/milestones.js',
   'src/vendors.js',
@@ -92,6 +93,24 @@ if (missingIds.length > 0) {
   issuesFound++;
 } else {
   console.log('  ✔ Verified: app.js DOM references resolve in index.html');
+}
+
+// 4. Credential boundary: optional Gemini API keys must never be persisted.
+if (/sessionStorage\.setItem\(\s*['"]planflow_session_gemini_key['"]/.test(appSource)) {
+  console.error('❌ Credential Boundary Violation — Gemini API key must not be written to sessionStorage.');
+  issuesFound++;
+} else {
+  console.log('  ✔ Verified: Gemini API key is not persisted in sessionStorage');
+}
+
+// 5. Accessibility disclosure contract: every aria-controls target must exist.
+const controlledIds = [...htmlShell.matchAll(/aria-controls="([^"]+)"/g)].map((match) => match[1]);
+const missingControlledIds = [...new Set(controlledIds)].filter((id) => !htmlShell.includes(`id="${id}"`));
+if (missingControlledIds.length > 0) {
+  console.error(`❌ Accessibility Contract Violation — aria-controls references missing IDs: ${missingControlledIds.join(', ')}`);
+  issuesFound++;
+} else {
+  console.log('  ✔ Verified: aria-controls targets resolve in index.html');
 }
 
 console.log('\n============================================================');

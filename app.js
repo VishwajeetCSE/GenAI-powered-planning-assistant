@@ -2,7 +2,7 @@
  * @file app.js
  * @module PlanFlowAI/UI
  * @description Primary UI Controller & Reactive Presentation Layer for PlanFlow AI.
- * Implements strict WCAG 2.1 AA accessibility, DOM sanitization, and session-only credential boundaries.
+ * Implements strict WCAG 2.1 AA accessibility, DOM sanitization, and memory-only credential boundaries.
  * @license MIT
  */
 
@@ -18,6 +18,8 @@ import {
   sanitizeString,
   debounce,
   setSanitizedHTML,
+  setDisclosureState,
+  setupAccessibleTabs,
   calculateBudget,
   formatCurrency,
   buildMilestones,
@@ -51,11 +53,12 @@ export class PlanFlowUI {
   constructor() {
     this.state = getDefaultState();
 
-    // Session-only in-memory API key (Strictly NOT stored in localStorage or exported plans)
+    // Page-memory-only API key (never written to browser storage or exported plans)
     this.sessionApiKey = '';
     this.sessionGeminiModel = 'gemini-1.5-flash';
     if (typeof window !== 'undefined' && window.sessionStorage) {
-      this.sessionApiKey = window.sessionStorage.getItem('planflow_session_gemini_key') || '';
+      // Clear a key persisted by an earlier release at the next safe application load.
+      window.sessionStorage.removeItem('planflow_session_gemini_key');
       const storedModel = window.sessionStorage.getItem('planflow_session_gemini_model');
       this.sessionGeminiModel = isSupportedGeminiModel(storedModel) ? storedModel : this.sessionGeminiModel;
     }
@@ -301,7 +304,7 @@ export class PlanFlowUI {
 
     // Accessible Tabs: Vendors
     if (this.vendorTablist) {
-      this.setupAccessibleTabs(this.vendorTablist, (selectedFilter, tabId) => {
+      setupAccessibleTabs(this.vendorTablist, (selectedFilter, tabId) => {
         this.activeVendorFilter = selectedFilter;
         if (this.vendorCardsContainer) {
           this.vendorCardsContainer.setAttribute('aria-labelledby', tabId);
@@ -312,7 +315,7 @@ export class PlanFlowUI {
 
     // Accessible Tabs: Inventory
     if (this.invTablist) {
-      this.setupAccessibleTabs(this.invTablist, (selectedFilter, tabId) => {
+      setupAccessibleTabs(this.invTablist, (selectedFilter, tabId) => {
         this.activeInventoryFilter = selectedFilter;
         if (this.invTableWrapper) {
           this.invTableWrapper.setAttribute('aria-labelledby', tabId);
@@ -323,28 +326,28 @@ export class PlanFlowUI {
 
     // Vendor Form
     this.btnAddVendorToggle?.addEventListener('click', () => {
-      this.addVendorForm?.classList.toggle('hidden');
+      setDisclosureState(this.btnAddVendorToggle, this.addVendorForm, this.addVendorForm?.hidden, true);
     });
     this.btnCancelVendor?.addEventListener('click', () => {
-      this.addVendorForm?.classList.add('hidden');
+      setDisclosureState(this.btnAddVendorToggle, this.addVendorForm, false);
     });
     this.addVendorForm?.addEventListener('submit', (e) => this.handleAddVendor(e));
 
     // Risk Form
     this.btnAddRiskToggle?.addEventListener('click', () => {
-      this.addRiskForm?.classList.toggle('hidden');
+      setDisclosureState(this.btnAddRiskToggle, this.addRiskForm, this.addRiskForm?.hidden, true);
     });
     this.btnCancelRisk?.addEventListener('click', () => {
-      this.addRiskForm?.classList.add('hidden');
+      setDisclosureState(this.btnAddRiskToggle, this.addRiskForm, false);
     });
     this.addRiskForm?.addEventListener('submit', (e) => this.handleAddRisk(e));
 
     // Inventory Form
     this.btnAddInventoryToggle?.addEventListener('click', () => {
-      this.addInventoryForm?.classList.toggle('hidden');
+      setDisclosureState(this.btnAddInventoryToggle, this.addInventoryForm, this.addInventoryForm?.hidden, true);
     });
     this.btnCancelInventory?.addEventListener('click', () => {
-      this.addInventoryForm?.classList.add('hidden');
+      setDisclosureState(this.btnAddInventoryToggle, this.addInventoryForm, false);
     });
     this.addInventoryForm?.addEventListener('submit', (e) => this.handleAddInventory(e));
 
@@ -395,12 +398,11 @@ export class PlanFlowUI {
       this.sessionGeminiModel = isSupportedGeminiModel(selectedModel) ? selectedModel : 'gemini-1.5-flash';
       this.geminiApiKeyInput?.setAttribute('aria-invalid', 'false');
       if (typeof window !== 'undefined' && window.sessionStorage) {
-        window.sessionStorage.setItem('planflow_session_gemini_key', key);
         window.sessionStorage.setItem('planflow_session_gemini_model', this.sessionGeminiModel);
       }
       this.updateSettingsStatus();
       this.settingsDialog?.close();
-      this.showToast(key ? 'Gemini API key saved for this session.' : 'Reverted to offline Heuristic AI.');
+      this.showToast(key ? 'Gemini API key applied for this open page.' : 'Reverted to offline Heuristic AI.');
     };
     this.settingsForm?.addEventListener('submit', saveSettings);
     this.btnSaveSettings?.addEventListener('click', saveSettings);
@@ -415,45 +417,7 @@ export class PlanFlowUI {
         window.sessionStorage.removeItem('planflow_session_gemini_key');
       }
       this.updateSettingsStatus();
-      this.showToast('Removed session API key.');
-    });
-  }
-
-  /**
-   * Sets up accessible WAI-ARIA tab navigation (Arrow keys, Home, End, aria-selected, roving tabindex).
-   */
-  setupAccessibleTabs(tablistEl, onSelect) {
-    const tabs = Array.from(tablistEl.querySelectorAll('[role="tab"]'));
-    if (tabs.length === 0) return;
-
-    tabs.forEach((tab, index) => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => {
-          t.classList.remove('active');
-          t.setAttribute('aria-selected', 'false');
-          t.tabIndex = -1;
-        });
-        tab.classList.add('active');
-        tab.setAttribute('aria-selected', 'true');
-        tab.tabIndex = 0;
-
-        const filterVal = tab.getAttribute('data-filter') || 'all';
-        onSelect(filterVal, tab.id);
-      });
-
-      tab.addEventListener('keydown', (e) => {
-        let targetIndex = null;
-        if (e.key === 'ArrowRight') targetIndex = (index + 1) % tabs.length;
-        else if (e.key === 'ArrowLeft') targetIndex = (index - 1 + tabs.length) % tabs.length;
-        else if (e.key === 'Home') targetIndex = 0;
-        else if (e.key === 'End') targetIndex = tabs.length - 1;
-
-        if (targetIndex !== null) {
-          e.preventDefault();
-          tabs[targetIndex].focus();
-          tabs[targetIndex].click();
-        }
-      });
+      this.showToast('Removed API key from page memory.');
     });
   }
 
@@ -826,7 +790,7 @@ export class PlanFlowUI {
     });
 
     this.addVendorForm?.reset();
-    this.addVendorForm?.classList.add('hidden');
+    setDisclosureState(this.btnAddVendorToggle, this.addVendorForm, false);
     this.saveAndRender();
     this.showToast(`Added vendor: ${name}`);
   }
@@ -911,7 +875,7 @@ export class PlanFlowUI {
     });
 
     this.addRiskForm?.reset();
-    this.addRiskForm?.classList.add('hidden');
+    setDisclosureState(this.btnAddRiskToggle, this.addRiskForm, false);
     this.saveAndRender();
     this.showToast('Logged new event risk.');
   }
@@ -1000,7 +964,7 @@ export class PlanFlowUI {
     });
 
     this.addInventoryForm?.reset();
-    this.addInventoryForm?.classList.add('hidden');
+    setDisclosureState(this.btnAddInventoryToggle, this.addInventoryForm, false);
     this.saveAndRender();
     this.showToast(`Added supply: ${name}`);
   }
@@ -1278,6 +1242,5 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
     const app = new PlanFlowUI();
     app.init();
-    window.planFlowApp = app;
   });
 }
