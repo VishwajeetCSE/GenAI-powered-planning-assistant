@@ -16,7 +16,7 @@ node test.js
 ### Test Suite Summary
 | Test Suite | Focus Area | Assertions | Result |
 | :--- | :--- | :---: | :---: |
-| **Suite 1: Security & Sanitization** | Strict XSS escaping (`<script>`, quotes, ampersands, slashes), numeric clamp bounds, string length truncation | 5 | ✅ PASS (100%) |
+| **Suite 1: Security & Sanitization** | Strict XSS escaping (`<script>`, quotes, ampersands, slashes), numeric clamp bounds, string length truncation, cryptographically secure ID generation | 6 | ✅ PASS (100%) |
 | **Suite 2: Dynamic Budget Engine** | 100% balanced math, positive variance (over-budget), negative variance (unassigned reserve), cost per guest, multi-currency formatting (`$`, `₹`, `€`, `£`) | 5 | ✅ PASS (100%) |
 | **Suite 3: Milestone Roadmap Engine** | Archetype-specific task generation, dynamic horizon scheduling, Planning Readiness Score calculation, completion toggling | 5 | ✅ PASS (100%) |
 | **Suite 4: Vendor & Negotiation Assistant** | Tailored sample vendors, budget vs. quote variance analysis, high-leverage AI negotiation script generation | 3 | ✅ PASS (100%) |
@@ -27,7 +27,7 @@ node test.js
 | **Suite 9: Debounce & Performance Guards** | High-frequency input debounce execution, argument preservation, deferred timer safety | 2 | ✅ PASS (100%) |
 | **Suite 10: Exploit Regression Gate** | JSON import schema validation, numeric coercion of inventory quantity, safe identifier normalization, and sensitive API key stripping | 4 | ✅ PASS (100%) |
 | **Suite 11: Accessibility & UI Presentation** | Secure markdown formatting, executive printable brief generation, WAI-ARIA disclosure state management | 3 | ✅ PASS (100%) |
-| **Total** | **End-to-End System Logic** | **49** | **✅ 100% PASS** |
+| **Total** | **End-to-End System Logic** | **50** | **✅ 100% PASS** |
 
 ---
 

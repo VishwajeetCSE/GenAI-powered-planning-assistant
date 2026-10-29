@@ -16,3 +16,4 @@ export * from './inventory.js';
 export * from './ai.js';
 export * from './storage.js';
 export * from './ui-renderers.js';
+export * from './ui-events.js';

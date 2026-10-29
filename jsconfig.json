@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
     "checkJs": true,
-    "module": "commonjs",
+    "module": "ES2022",
+    "moduleResolution": "Node",
     "target": "ES2022",
     "strict": false
   },
   "include": [
     "app.js",
     "test.js",
-    "src/**/*.js"
+    "src/**/*.js",
+    "scripts/**/*.js"
   ],
   "exclude": [
     "node_modules"

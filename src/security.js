@@ -81,3 +81,18 @@ export function setSanitizedHTML(element, htmlString) {
   template.innerHTML = String(htmlString).trim();
   element.replaceChildren(...template.content.childNodes);
 }
+
+/**
+ * Generates a cryptographically strong unique identifier for domain items.
+ * Uses Web Crypto API when available, falling back safely to timestamp + entropy.
+ * @param {string} [prefix='id'] - Optional prefix for the identifier
+ * @returns {string} Safe, unique identifier
+ */
+export function generateSecureId(prefix = 'id') {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  const randomPart = Math.random().toString(36).substring(2, 10);
+  return `${prefix}-${Date.now().toString(36)}-${randomPart}`;
+}
+

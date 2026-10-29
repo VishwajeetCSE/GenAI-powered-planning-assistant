@@ -8,6 +8,7 @@ import {
   escapeHTML,
   sanitizeNumber,
   sanitizeString,
+  generateSecureId,
   debounce,
   setSanitizedHTML,
   CURRENCIES,
@@ -135,6 +136,14 @@ describe('Suite 1: Security, XSS Sanitization & DOM Injection Defense', () => {
     assertEqual(sanitizeString('Super long string text here', 5), 'Super');
     assertEqual(sanitizeString(null, 50), '');
     assertEqual(sanitizeString(undefined, 50), '');
+  });
+
+  it('generates collision-resistant unique identifiers with given prefix', () => {
+    const id1 = generateSecureId('task');
+    const id2 = generateSecureId('task');
+    assert(id1.startsWith('task-'), 'Must start with task- prefix');
+    assert(id2.startsWith('task-'), 'Must start with task- prefix');
+    assert(id1 !== id2, 'Generated identifiers must be unique');
   });
 });
 

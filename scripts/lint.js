@@ -24,6 +24,7 @@ const targetFiles = [
   'src/ai.js',
   'src/storage.js',
   'src/ui-renderers.js',
+  'src/ui-events.js',
   'scripts/lint.js',
   'scripts/audit-a11y.js'
 ];
@@ -84,21 +85,23 @@ for (const file of targetFiles) {
 
 // 3. UI Contract Check: every statically referenced controller ID must exist in the HTML shell.
 const appSource = fs.readFileSync(path.resolve('app.js'), 'utf8');
+const uiEventsSource = fs.readFileSync(path.resolve('src/ui-events.js'), 'utf8');
+const combinedSource = appSource + '\n' + uiEventsSource;
 const htmlShell = fs.readFileSync(path.resolve('index.html'), 'utf8');
-const referencedIds = [...appSource.matchAll(/getElementById\('([^']+)'\)/g)]
+const referencedIds = [...combinedSource.matchAll(/getElementById\('([^']+)'\)/g)]
   .map((match) => match[1])
   .filter((id) => id !== 'temp-thinking');
 const missingIds = [...new Set(referencedIds)].filter((id) => !htmlShell.includes(`id="${id}"`));
 
 if (missingIds.length > 0) {
-  console.error(`❌ UI Contract Violation — app.js references missing HTML IDs: ${missingIds.join(', ')}`);
+  console.error(`❌ UI Contract Violation — Missing HTML IDs referenced in source: ${missingIds.join(', ')}`);
   issuesFound++;
 } else {
-  console.log('  ✔ Verified: app.js DOM references resolve in index.html');
+  console.log('  ✔ Verified: Application DOM references resolve in index.html');
 }
 
 // 4. Credential boundary: optional Gemini API keys must never be persisted.
-if (/sessionStorage\.setItem\(\s*['"]planflow_session_gemini_key['"]/.test(appSource)) {
+if (/sessionStorage\.setItem\(\s*['"]planflow_session_gemini_key['"]/.test(combinedSource)) {
   console.error('❌ Credential Boundary Violation — Gemini API key must not be written to sessionStorage.');
   issuesFound++;
 } else {
