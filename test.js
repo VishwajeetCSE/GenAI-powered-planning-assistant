@@ -32,7 +32,10 @@ import {
   getDefaultState,
   validateAndNormalizePlan,
   saveStateToStorage,
-  loadStateFromStorage
+  loadStateFromStorage,
+  setDisclosureState,
+  formatChatMessage,
+  generatePrintableSummaryHTML
 } from './src/index.js';
 
 // ============================================================================
@@ -741,6 +744,70 @@ describe('Suite 10: Exploit Regression & Import Schema Sanitization Gate', () =>
   });
 });
 
+describe('Suite 11: Accessibility Semantics & Modular UI Presentation Helpers', () => {
+  it('formats chat markdown securely with bold, italics, and safe entity escaping', () => {
+    const raw = 'Hello **Organizer**! *Note*: <script>alert(1)</script>';
+    const formatted = formatChatMessage(raw);
+    assertContains(formatted, '<strong>Organizer</strong>');
+    assertContains(formatted, '<em>Note</em>');
+    assertContains(formatted, '&lt;script&gt;');
+    assertFalse(formatted.includes('<script>'));
+  });
+
+  it('generates secure executive printable brief markup with all event KPIs', () => {
+    const state = getDefaultState('wedding');
+    const budgetData = calculateBudget(state.budget, state.categoryPercentages, state.currency, state.guests);
+    const readiness = calculateReadiness(state.milestones);
+    const riskMetrics = calculateRiskMetrics(state.risks);
+    const invMetrics = calculateInventoryMetrics(state.inventory);
+    const arch = ARCHETYPE_DEFAULTS.wedding;
+
+    const summaryHtml = generatePrintableSummaryHTML({
+      budgetData,
+      readiness,
+      riskMetrics,
+      invMetrics,
+      arch,
+      state
+    });
+
+    assertContains(summaryHtml, 'PlanFlow AI — Executive Event Brief');
+    assertContains(summaryHtml, 'Contracted Vendors');
+    assertContains(summaryHtml, 'Event Safety Index');
+    assertContains(summaryHtml, `${readiness.score}% Complete`);
+    assertFalse(summaryHtml.includes('<script'));
+  });
+
+  it('manages WAI-ARIA disclosure attributes consistently without DOM exceptions', () => {
+    // Mock minimal DOM element objects for headless Node environment
+    const triggerAttrs = {};
+    const panelAttrs = {};
+    const mockTrigger = {
+      setAttribute: (k, v) => { triggerAttrs[k] = v; },
+      getAttribute: (k) => triggerAttrs[k]
+    };
+    const mockPanel = {
+      hidden: true,
+      classList: {
+        toggle: (className, flag) => { panelAttrs[className] = flag; }
+      },
+      setAttribute: (k, v) => { panelAttrs[k] = v; },
+      getAttribute: (k) => panelAttrs[k],
+      querySelector: () => null
+    };
+
+    setDisclosureState(mockTrigger, mockPanel, true);
+    assertEqual(triggerAttrs['aria-expanded'], 'true');
+    assertEqual(mockPanel.hidden, false);
+    assertEqual(panelAttrs['aria-hidden'], 'false');
+
+    setDisclosureState(mockTrigger, mockPanel, false);
+    assertEqual(triggerAttrs['aria-expanded'], 'false');
+    assertEqual(mockPanel.hidden, true);
+    assertEqual(panelAttrs['aria-hidden'], 'true');
+  });
+});
+
 // ============================================================================
 // ASYNC TEST RUNNER ORCHESTRATOR
 // ============================================================================
@@ -785,7 +852,7 @@ async function runAllSuites() {
     console.error(`\n${COLORS.red}${COLORS.bold}❌ TEST RUN FAILED with ${failedTests} failure(s).${COLORS.reset}\n`);
     process.exit(1);
   } else {
-    console.log(`\n${COLORS.green}${COLORS.bold}✨ 100% TESTS PASSED! All 10 suites verified successfully.${COLORS.reset}\n`);
+    console.log(`\n${COLORS.green}${COLORS.bold}✨ 100% TESTS PASSED! All ${suites.length} suites verified successfully.${COLORS.reset}\n`);
     process.exit(0);
   }
 }

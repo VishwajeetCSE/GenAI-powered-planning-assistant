@@ -23,7 +23,9 @@ const targetFiles = [
   'src/inventory.js',
   'src/ai.js',
   'src/storage.js',
-  'scripts/lint.js'
+  'src/ui-renderers.js',
+  'scripts/lint.js',
+  'scripts/audit-a11y.js'
 ];
 
 console.log('\n🔍 Running PlanFlow AI Deterministic Quality & Security Linter...\n');

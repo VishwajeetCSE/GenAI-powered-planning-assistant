@@ -7,7 +7,7 @@ This plan is based on the published evaluator breakdown: Code Quality **86**, Se
 | Priority | Goal | Evidence required | Status |
 | --- | --- | --- | --- |
 | P0 | Preserve the existing perfect scores | Keep the zero-dependency architecture and run the full quality gate | In progress for every change |
-| P1 | Raise code quality | Separate reusable UI behavior from the controller; maintain a single public module barrel; document decisions | Implemented: reusable WAI-ARIA helpers in `src/ui-accessibility.js` |
+| P1 | Raise code quality | Separate reusable UI behavior from the controller; maintain a single public module barrel; document decisions | Implemented: UI presentation modularized into `src/ui-renderers.js`, `app.js` reduced to lean orchestrator |
 | P1 | Raise security | Prevent API-key persistence, preserve strict input/model validation, keep imports normalized, and verify CSP | Implemented: API key is now page-memory-only |
 | P1 | Close accessibility gap | Apply disclosure semantics, keyboard control, focus placement, and correct hidden state | Implemented: add-item forms now use `aria-controls`, `aria-expanded`, `hidden`, and focus-on-open |
 | P2 | Make regressions visible | Expand the deterministic linter to cover each source module and keep automated tests green | Implemented: all source modules, credential persistence, and `aria-controls` targets are checked |

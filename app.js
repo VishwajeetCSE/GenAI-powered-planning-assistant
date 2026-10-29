@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @module PlanFlowAI/UI
- * @description Primary UI Controller & Reactive Presentation Layer for PlanFlow AI.
+ * @description Primary UI Controller & Reactive Presentation Orchestrator for PlanFlow AI.
  * Implements strict WCAG 2.1 AA accessibility, DOM sanitization, and memory-only credential boundaries.
  * @license MIT
  */
@@ -39,7 +39,16 @@ import {
   getDefaultState,
   validateAndNormalizePlan,
   saveStateToStorage,
-  loadStateFromStorage
+  loadStateFromStorage,
+  renderDistributionBar,
+  renderCategorySliders,
+  renderMilestonePhases,
+  renderVendorCards,
+  renderRiskCards,
+  renderInventoryRows,
+  formatChatMessage,
+  renderChatHistory,
+  generatePrintableSummaryHTML
 } from './src/index.js';
 
 // Re-export domain engines for external consumers & test runners
@@ -57,7 +66,6 @@ export class PlanFlowUI {
     this.sessionApiKey = '';
     this.sessionGeminiModel = 'gemini-1.5-flash';
     if (typeof window !== 'undefined' && window.sessionStorage) {
-      // Clear a key persisted by an earlier release at the next safe application load.
       window.sessionStorage.removeItem('planflow_session_gemini_key');
       const storedModel = window.sessionStorage.getItem('planflow_session_gemini_model');
       this.sessionGeminiModel = isSupportedGeminiModel(storedModel) ? storedModel : this.sessionGeminiModel;
@@ -252,7 +260,7 @@ export class PlanFlowUI {
     this.btnPrintSummary?.addEventListener('click', () => this.triggerPrintSummary());
 
     // Archetype Switcher
-    this.archetypeCards?.forEach(card => {
+    this.archetypeCards?.forEach((card) => {
       card.addEventListener('click', () => {
         const radio = card.querySelector('input[type="radio"]');
         if (radio) this.switchArchetype(radio.value);
@@ -362,7 +370,7 @@ export class PlanFlowUI {
       this.showToast('Conversation cleared.');
     });
 
-    this.promptChips?.forEach(chip => {
+    this.promptChips?.forEach((chip) => {
       chip.addEventListener('click', () => {
         const prompt = chip.getAttribute('data-prompt');
         if (prompt) {
@@ -404,6 +412,7 @@ export class PlanFlowUI {
       this.settingsDialog?.close();
       this.showToast(key ? 'Gemini API key applied for this open page.' : 'Reverted to offline Heuristic AI.');
     };
+
     this.settingsForm?.addEventListener('submit', saveSettings);
     this.btnSaveSettings?.addEventListener('click', saveSettings);
     this.btnCloseSettingsDialog?.addEventListener('click', () => this.settingsDialog?.close());
@@ -429,7 +438,7 @@ export class PlanFlowUI {
     if (this.locationStyleSelect) this.locationStyleSelect.value = this.state.location;
     if (this.eventVibeSelect) this.eventVibeSelect.value = this.state.vibe;
 
-    this.archetypeCards?.forEach(card => {
+    this.archetypeCards?.forEach((card) => {
       const radio = card.querySelector('input[type="radio"]');
       if (radio) {
         const isMatch = radio.value === this.state.eventType;
@@ -474,7 +483,7 @@ export class PlanFlowUI {
 
   renderCurrencySymbols() {
     const symbol = CURRENCIES[this.state.currency]?.symbol || '$';
-    this.currencyLabels?.forEach(label => {
+    this.currencyLabels?.forEach((label) => {
       label.textContent = symbol;
     });
   }
@@ -537,72 +546,17 @@ export class PlanFlowUI {
       }
     }
 
-    // Distribution Bar (Safe DOM Nodes)
-    if (this.distributionBar) {
-      this.distributionBar.replaceChildren();
-      budgetData.categories.forEach(cat => {
-        if (cat.percentage > 0) {
-          const seg = document.createElement('div');
-          seg.className = 'distribution-segment';
-          seg.style.width = `${cat.percentage}%`;
-          seg.style.backgroundColor = cat.color;
-          seg.setAttribute('aria-label', `${cat.name}: ${cat.percentage}%`);
-          seg.title = `${cat.name}: ${cat.percentage}% (${formatCurrency(cat.amount, this.state.currency)})`;
-          this.distributionBar.appendChild(seg);
-        }
-      });
-    }
+    renderDistributionBar(this.distributionBar, budgetData.categories, this.state.currency);
 
-    // Category Sliders
-    if (this.categorySlidersContainer) {
-      this.categorySlidersContainer.replaceChildren();
-      budgetData.categories.forEach(cat => {
-        const card = document.createElement('div');
-        card.className = 'slider-card';
-        card.style.setProperty('--category-color', cat.color);
-
-        setSanitizedHTML(card, `
-          <div class="slider-card-header">
-            <span class="slider-category-name">
-              <span style="color: ${cat.color}; font-size: 1.1rem;">●</span>
-              ${escapeHTML(cat.name)}
-            </span>
-            <span class="slider-percent-badge">${cat.percentage}%</span>
-          </div>
-          <div class="slider-control-row">
-            <button class="slider-btn-step btn-step-down" data-cat="${cat.id}" aria-label="Decrease ${escapeHTML(cat.name)} by 5%">-</button>
-            <input type="range" class="slider-input" min="0" max="100" step="1" value="${cat.percentage}"
-                   data-cat="${cat.id}" aria-label="${escapeHTML(cat.name)} percentage slider">
-            <button class="slider-btn-step btn-step-up" data-cat="${cat.id}" aria-label="Increase ${escapeHTML(cat.name)} by 5%">+</button>
-          </div>
-          <div class="slider-card-footer">
-            <span>Est. ${formatCurrency(cat.perGuest, this.state.currency)} / guest</span>
-            <span class="slider-amount">${formatCurrency(cat.amount, this.state.currency)}</span>
-          </div>
-        `);
-
-        const rangeInput = card.querySelector('.slider-input');
-        const stepDown = card.querySelector('.btn-step-down');
-        const stepUp = card.querySelector('.btn-step-up');
-
-        rangeInput?.addEventListener('input', (e) => {
-          this.state.categoryPercentages[cat.id] = Number(e.target.value);
-          this.saveAndRender();
-        });
-
-        stepDown?.addEventListener('click', () => {
-          this.state.categoryPercentages[cat.id] = Math.max(0, cat.percentage - 5);
-          this.saveAndRender();
-        });
-
-        stepUp?.addEventListener('click', () => {
-          this.state.categoryPercentages[cat.id] = Math.min(100, cat.percentage + 5);
-          this.saveAndRender();
-        });
-
-        this.categorySlidersContainer.appendChild(card);
-      });
-    }
+    renderCategorySliders(
+      this.categorySlidersContainer,
+      budgetData.categories,
+      this.state.currency,
+      (catId, nextValue) => {
+        this.state.categoryPercentages[catId] = nextValue;
+        this.saveAndRender();
+      }
+    );
   }
 
   renderRoadmap() {
@@ -612,71 +566,18 @@ export class PlanFlowUI {
     if (this.readinessProgressTrack) this.readinessProgressTrack.setAttribute('aria-valuenow', String(readiness.score));
     if (this.readinessStatusBadge) this.readinessStatusBadge.textContent = readiness.status;
 
-    if (!this.milestonesContainer) return;
-    this.milestonesContainer.replaceChildren();
-
-    // Group tasks by phase
-    const phases = {};
-    this.state.milestones.forEach(t => {
-      const pid = t.phaseId || 'general';
-      if (!phases[pid]) {
-        phases[pid] = { title: t.phaseTitle || 'Milestone Phase', tasks: [] };
+    renderMilestonePhases(
+      this.milestonesContainer,
+      this.state.milestones,
+      (task, done) => {
+        task.done = done;
+        this.saveAndRender();
+      },
+      (taskId) => {
+        this.state.milestones = this.state.milestones.filter((m) => m.id !== taskId);
+        this.saveAndRender();
       }
-      phases[pid].tasks.push(t);
-    });
-
-    Object.keys(phases).forEach(pid => {
-      const phase = phases[pid];
-      const completedCount = phase.tasks.filter(t => t.done).length;
-      const totalCount = phase.tasks.length;
-
-      const card = document.createElement('div');
-      card.className = 'milestone-phase-card';
-
-      setSanitizedHTML(card, `
-        <div class="milestone-phase-header">
-          <div class="phase-title-group">
-            <span class="phase-title">${escapeHTML(phase.title)}</span>
-          </div>
-          <span class="phase-meta">${completedCount} of ${totalCount} completed</span>
-        </div>
-        <ul class="milestone-task-list"></ul>
-      `);
-
-      const listEl = card.querySelector('.milestone-task-list');
-
-      phase.tasks.forEach(task => {
-        const li = document.createElement('li');
-        li.className = `task-item ${task.done ? 'completed' : ''}`;
-        const chkId = `chk-${task.id}`;
-
-        setSanitizedHTML(li, `
-          <label class="task-checkbox-label" for="${chkId}">
-            <input type="checkbox" id="${chkId}" class="task-checkbox" ${task.done ? 'checked' : ''}>
-            <span class="task-label">${escapeHTML(task.text)}</span>
-          </label>
-          <div class="task-actions">
-            <button class="btn-task-del" aria-label="Delete task: ${escapeHTML(task.text)}" title="Delete task">✕</button>
-          </div>
-        `);
-
-        const chk = li.querySelector('.task-checkbox');
-        chk?.addEventListener('change', () => {
-          task.done = chk.checked;
-          this.saveAndRender();
-        });
-
-        const delBtn = li.querySelector('.btn-task-del');
-        delBtn?.addEventListener('click', () => {
-          this.state.milestones = this.state.milestones.filter(m => m.id !== task.id);
-          this.saveAndRender();
-        });
-
-        listEl?.appendChild(li);
-      });
-
-      this.milestonesContainer.appendChild(card);
-    });
+    );
   }
 
   addQuickTask() {
@@ -706,68 +607,22 @@ export class PlanFlowUI {
   }
 
   renderVendors() {
-    if (!this.vendorCardsContainer) return;
-    this.vendorCardsContainer.replaceChildren();
-
-    const filtered = this.state.vendors.filter(v => {
-      if (this.activeVendorFilter === 'all') return true;
-      return v.category === this.activeVendorFilter;
-    });
-
-    if (filtered.length === 0) {
-      setSanitizedHTML(this.vendorCardsContainer, `
-        <div class="kpi-card" style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
-          <p style="color: var(--text-muted);">No vendors found matching this filter.</p>
-        </div>
-      `);
-      return;
-    }
-
-    filtered.forEach(vendor => {
-      const card = document.createElement('div');
-      card.className = 'vendor-card';
-
-      setSanitizedHTML(card, `
-        <div class="vendor-card-header">
-          <div>
-            <div class="vendor-name">${escapeHTML(vendor.name)}</div>
-            <span class="vendor-category-badge">${escapeHTML(vendor.category)}</span>
-          </div>
-          <select class="vendor-status-select" aria-label="Status for ${escapeHTML(vendor.name)}">
-            <option value="Prospecting" ${vendor.status === 'Prospecting' ? 'selected' : ''}>Prospecting</option>
-            <option value="Contacted" ${vendor.status === 'Contacted' ? 'selected' : ''}>Contacted</option>
-            <option value="Negotiating" ${vendor.status === 'Negotiating' ? 'selected' : ''}>Negotiating</option>
-            <option value="Booked" ${vendor.status === 'Booked' ? 'selected' : ''}>Booked</option>
-          </select>
-        </div>
-        <div class="vendor-price-row">
-          <span>Quoted: <strong>${formatCurrency(vendor.quoted, this.state.currency)}</strong></span>
-        </div>
-        ${vendor.notes ? `<div class="vendor-notes">${escapeHTML(vendor.notes)}</div>` : ''}
-        <div class="vendor-card-actions">
-          <button class="btn btn-secondary btn-sm btn-negotiate" style="flex: 1;">✨ AI Negotiation Script</button>
-          <button class="btn btn-ghost btn-sm btn-del-vendor" aria-label="Delete vendor: ${escapeHTML(vendor.name)}" title="Delete vendor">✕</button>
-        </div>
-      `);
-
-      const statusSelect = card.querySelector('.vendor-status-select');
-      statusSelect?.addEventListener('change', (e) => {
-        vendor.status = e.target.value;
+    renderVendorCards(
+      this.vendorCardsContainer,
+      this.state.vendors,
+      this.activeVendorFilter,
+      this.state.currency,
+      (vendor, nextStatus) => {
+        vendor.status = nextStatus;
         this.saveAndRender();
-      });
-
-      const btnNegotiate = card.querySelector('.btn-negotiate');
-      btnNegotiate?.addEventListener('click', () => this.openNegotiationModal(vendor));
-
-      const btnDel = card.querySelector('.btn-del-vendor');
-      btnDel?.addEventListener('click', () => {
-        this.state.vendors = this.state.vendors.filter(v => v.id !== vendor.id);
+      },
+      (vendor) => this.openNegotiationModal(vendor),
+      (vendorId, vendorName) => {
+        this.state.vendors = this.state.vendors.filter((v) => v.id !== vendorId);
         this.saveAndRender();
-        this.showToast(`Removed vendor: ${vendor.name}`);
-      });
-
-      this.vendorCardsContainer.appendChild(card);
-    });
+        this.showToast(`Removed vendor: ${vendorName}`);
+      }
+    );
   }
 
   handleAddVendor(e) {
@@ -803,55 +658,19 @@ export class PlanFlowUI {
       this.riskProfileBadge.className = metrics.safetyScore >= 80 ? 'badge badge-success' : 'badge badge-warning';
     }
 
-    if (!this.riskCardsContainer) return;
-    this.riskCardsContainer.replaceChildren();
-
-    this.state.risks.forEach(risk => {
-      const card = document.createElement('div');
-      card.className = 'risk-card';
-
-      const probClass = risk.probability === 'High' ? 'text-danger' : risk.probability === 'Medium' ? 'text-warning' : 'text-success';
-      const impactClass = risk.impact === 'Critical' ? 'badge badge-danger' : 'badge badge-warning';
-
-      setSanitizedHTML(card, `
-        <div class="risk-card-header">
-          <div class="risk-title-wrap">
-            <span class="risk-cat-tag">${escapeHTML(risk.category)}</span>
-            <span class="risk-title">${escapeHTML(risk.title)}</span>
-          </div>
-          <select class="risk-status-select" aria-label="Status for ${escapeHTML(risk.title)}">
-            <option value="Mitigated" ${risk.status === 'Mitigated' ? 'selected' : ''}>✓ Mitigated</option>
-            <option value="Monitoring" ${risk.status === 'Monitoring' ? 'selected' : ''}>⏳ Monitoring</option>
-            <option value="Action Needed" ${risk.status === 'Action Needed' ? 'selected' : ''}>⚠️ Action Needed</option>
-          </select>
-        </div>
-        <div class="risk-meta-row">
-          <span>Probability: <strong class="${probClass}">${escapeHTML(risk.probability)}</strong></span>
-          <span>Impact: <span class="${impactClass}">${escapeHTML(risk.impact)}</span></span>
-        </div>
-        <div class="risk-strategy-box">
-          <strong>Mitigation Protocol:</strong> ${escapeHTML(risk.strategy)}
-        </div>
-        <div style="text-align: right; margin-top: 0.5rem;">
-          <button class="btn btn-ghost btn-sm text-danger btn-del-risk" aria-label="Delete risk: ${escapeHTML(risk.title)}">Delete Risk</button>
-        </div>
-      `);
-
-      const statusSelect = card.querySelector('.risk-status-select');
-      statusSelect?.addEventListener('change', (e) => {
-        risk.status = e.target.value;
+    renderRiskCards(
+      this.riskCardsContainer,
+      this.state.risks,
+      (risk, nextStatus) => {
+        risk.status = nextStatus;
         this.saveAndRender();
-      });
-
-      const delBtn = card.querySelector('.btn-del-risk');
-      delBtn?.addEventListener('click', () => {
-        this.state.risks = this.state.risks.filter(r => r.id !== risk.id);
+      },
+      (riskId) => {
+        this.state.risks = this.state.risks.filter((r) => r.id !== riskId);
         this.saveAndRender();
         this.showToast('Removed risk item.');
-      });
-
-      this.riskCardsContainer.appendChild(card);
-    });
+      }
+    );
   }
 
   handleAddRisk(e) {
@@ -885,63 +704,20 @@ export class PlanFlowUI {
     if (this.inventoryReadinessText) this.inventoryReadinessText.textContent = `${metrics.readinessPct}%`;
     if (this.inventoryStatusBadge) this.inventoryStatusBadge.textContent = metrics.status;
 
-    if (!this.inventoryTableBody) return;
-    this.inventoryTableBody.replaceChildren();
-
-    const filtered = this.state.inventory.filter(item => {
-      if (this.activeInventoryFilter === 'all') return true;
-      return item.category === this.activeInventoryFilter;
-    });
-
-    if (filtered.length === 0) {
-      setSanitizedHTML(this.inventoryTableBody, `
-        <tr>
-          <td colspan="6" style="text-align: center; padding: 1.5rem; color: var(--text-muted);">
-            No supplies matching this category.
-          </td>
-        </tr>
-      `);
-      return;
-    }
-
-    filtered.forEach(item => {
-      const tr = document.createElement('tr');
-      tr.className = 'inv-row';
-
-      // Strict text escaping for item.quantity prevents DOM-XSS
-      setSanitizedHTML(tr, `
-        <td class="inv-td-name"><strong>${escapeHTML(item.name)}</strong></td>
-        <td><span class="inv-cat-pill">${escapeHTML(item.category)}</span></td>
-        <td class="inv-td-qty">${escapeHTML(String(item.quantity))}</td>
-        <td>
-          <select class="inv-status-select" aria-label="Status for ${escapeHTML(item.name)}">
-            <option value="Packed" ${item.status === 'Packed' ? 'selected' : ''}>Packed</option>
-            <option value="Sourced" ${item.status === 'Sourced' ? 'selected' : ''}>Sourced</option>
-            <option value="In-Transit" ${item.status === 'In-Transit' ? 'selected' : ''}>In-Transit</option>
-            <option value="On-Site" ${item.status === 'On-Site' ? 'selected' : ''}>On-Site</option>
-          </select>
-        </td>
-        <td style="color: var(--text-secondary);">${escapeHTML(item.owner)}</td>
-        <td class="inv-td-actions">
-          <button class="btn btn-ghost btn-sm text-danger btn-del-inv" aria-label="Delete supply: ${escapeHTML(item.name)}">✕</button>
-        </td>
-      `);
-
-      const statusSelect = tr.querySelector('.inv-status-select');
-      statusSelect?.addEventListener('change', (e) => {
-        item.status = e.target.value;
+    renderInventoryRows(
+      this.inventoryTableBody,
+      this.state.inventory,
+      this.activeInventoryFilter,
+      (item, nextStatus) => {
+        item.status = nextStatus;
         this.saveAndRender();
-      });
-
-      const delBtn = tr.querySelector('.btn-del-inv');
-      delBtn?.addEventListener('click', () => {
-        this.state.inventory = this.state.inventory.filter(i => i.id !== item.id);
+      },
+      (itemId, itemName) => {
+        this.state.inventory = this.state.inventory.filter((i) => i.id !== itemId);
         this.saveAndRender();
-        this.showToast(`Removed item: ${item.name}`);
-      });
-
-      this.inventoryTableBody.appendChild(tr);
-    });
+        this.showToast(`Removed item: ${itemName}`);
+      }
+    );
   }
 
   handleAddInventory(e) {
@@ -970,29 +746,7 @@ export class PlanFlowUI {
   }
 
   renderChat() {
-    if (!this.chatMessagesContainer) return;
-    this.chatMessagesContainer.replaceChildren();
-
-    this.state.chatHistory.forEach(msg => {
-      const bubble = document.createElement('div');
-      bubble.className = `chat-bubble ${msg.sender === 'user' ? 'chat-bubble-user' : 'chat-bubble-bot'}`;
-      setSanitizedHTML(bubble, this.formatChatMessage(msg.text));
-      this.chatMessagesContainer.appendChild(bubble);
-    });
-
-    this.chatMessagesContainer.scrollTop = this.chatMessagesContainer.scrollHeight;
-  }
-
-  formatChatMessage(rawText) {
-    let text = escapeHTML(rawText);
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    text = text.replace(/\n\* (.*?)(?=\n\*|\n\n|$)/g, '<li>$1</li>');
-    if (text.includes('<li>')) {
-      text = text.replace(/(<li>.*?<\/li>)/gs, '<ul>$1</ul>');
-    }
-    text = text.replace(/\n/g, '<br>');
-    return text;
+    renderChatHistory(this.chatMessagesContainer, this.state.chatHistory);
   }
 
   async handleChatSubmit() {
@@ -1044,7 +798,7 @@ export class PlanFlowUI {
       this.state.currency,
       this.state.guests
     );
-    const categoryInfo = budgetData.categories.find(c => c.name.toLowerCase().includes(vendor.category.toLowerCase())) || budgetData.categories[0];
+    const categoryInfo = budgetData.categories.find((c) => c.name.toLowerCase().includes(vendor.category.toLowerCase())) || budgetData.categories[0];
     const targetBudget = categoryInfo ? categoryInfo.amount : Math.round(vendor.quoted * 0.85);
 
     const scriptData = generateNegotiationScript({
@@ -1155,63 +909,18 @@ export class PlanFlowUI {
     const invMetrics = calculateInventoryMetrics(this.state.inventory || []);
     const arch = ARCHETYPE_DEFAULTS[this.state.eventType] || ARCHETYPE_DEFAULTS.wedding;
 
-    let vendorHtml = '';
-    this.state.vendors.forEach(v => {
-      vendorHtml += `
-        <tr>
-          <td style="padding: 6px; border-bottom: 1px solid #ddd;">${escapeHTML(v.name)}</td>
-          <td style="padding: 6px; border-bottom: 1px solid #ddd;">${escapeHTML(v.category)}</td>
-          <td style="padding: 6px; border-bottom: 1px solid #ddd;">${formatCurrency(v.quoted, this.state.currency)}</td>
-          <td style="padding: 6px; border-bottom: 1px solid #ddd;">${escapeHTML(v.status)}</td>
-        </tr>
-      `;
-    });
-
     if (this.printableSummary) {
-      setSanitizedHTML(this.printableSummary, `
-        <div style="padding: 24px; font-family: sans-serif; color: #111;">
-          <h1 style="margin-bottom: 4px;">PlanFlow AI — Executive Event Brief</h1>
-          <p style="color: #666; margin-bottom: 20px;">Generated on ${new Date().toLocaleDateString()} | Event: <strong>${arch.title}</strong></p>
-          
-          <div style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 140px; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
-              <div style="font-size: 12px; color: #666;">Total Budget</div>
-              <div style="font-size: 18px; font-weight: bold;">${formatCurrency(budgetData.totalBudget, this.state.currency)}</div>
-            </div>
-            <div style="flex: 1; min-width: 140px; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
-              <div style="font-size: 12px; color: #666;">Guest Count</div>
-              <div style="font-size: 18px; font-weight: bold;">${this.state.guests} Attendees</div>
-            </div>
-            <div style="flex: 1; min-width: 140px; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
-              <div style="font-size: 12px; color: #666;">Planning Readiness</div>
-              <div style="font-size: 18px; font-weight: bold; color: #10b981;">${readiness.score}% Complete</div>
-            </div>
-            <div style="flex: 1; min-width: 140px; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
-              <div style="font-size: 12px; color: #666;">Event Safety Index</div>
-              <div style="font-size: 18px; font-weight: bold; color: #6366f1;">${riskMetrics.safetyScore}% (${escapeHTML(riskMetrics.profile)})</div>
-            </div>
-            <div style="flex: 1; min-width: 140px; border: 1px solid #ccc; padding: 12px; border-radius: 8px;">
-              <div style="font-size: 12px; color: #666;">Logistics Deployed</div>
-              <div style="font-size: 18px; font-weight: bold; color: #06b6d4;">${invMetrics.readinessPct}% On-Site</div>
-            </div>
-          </div>
-
-          <h3 style="margin-top: 20px; border-bottom: 2px solid #222; padding-bottom: 4px;">Contracted Vendors</h3>
-          <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px;">
-            <thead>
-              <tr style="text-align: left; background: #f4f4f4;">
-                <th style="padding: 6px;">Vendor Name</th>
-                <th style="padding: 6px;">Category</th>
-                <th style="padding: 6px;">Quoted</th>
-                <th style="padding: 6px;">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${vendorHtml}
-            </tbody>
-          </table>
-        </div>
-      `);
+      setSanitizedHTML(
+        this.printableSummary,
+        generatePrintableSummaryHTML({
+          budgetData,
+          readiness,
+          riskMetrics,
+          invMetrics,
+          arch,
+          state: this.state
+        })
+      );
     }
 
     window.print();
